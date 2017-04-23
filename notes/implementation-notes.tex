@@ -1,0 +1,243 @@
+%===============================================================================
+% $Id: ifacconf.tex 19 2011-10-27 09:32:13Z jpuente $  
+% Template for IFAC meeting papers
+% Copyright (c) 2007-2008 International Federation of Automatic Control
+%===============================================================================
+\documentclass{article}
+
+\usepackage{graphicx}      % include this line if your document contains figures
+\usepackage{natbib}        % required for bibliography
+\usepackage{amsmath}
+%\usepackage{amstex}
+\usepackage{amssymb}
+
+% url
+\usepackage[hyphenbreaks]{breakurl}
+\usepackage[hyphens]{url}
+
+% for algorithms
+\usepackage{algorithm}
+\usepackage{algorithmicx,algpseudocode}
+
+% for tables
+\usepackage{array}
+\usepackage{tabu}
+
+% use for multi-figures in one figure
+\usepackage{subcaption}
+
+% for caption formatting
+\usepackage{caption}
+
+% for colored text
+\usepackage{color}
+%===============================================================================
+\title{Implementation Notes for the Distributed LP Framework}
+\author{Mohamed Abdlekader}
+\date{April 2017}
+ 
+\begin{document}
+ 
+\begin{titlepage}
+\maketitle
+\end{titlepage}
+
+%===============================================================================
+
+\section{Introduction}
+This documents describes some implementation details of the distributed LP framework. This document uses the corresponding \textit{IFAC2017} paper as a reference.
+
+\section{Dynamics}
+
+\begin{equation}
+\mathbf{x}^+ = \mathbf{x} + ( \mathbf{B}_{\text{in}} - \mathbf{B}_{\text{out}})\mathbf{u}
+\end{equation}
+
+Also,
+\[
+\mathbf{B} = \mathbf{B}_{\text{in}} - \mathbf{B}_{\text{out}} \in \mathcal{R}^{n_s \times n_u}
+\]
+Where $\mathbf{u}$ is
+\begin{equation*}
+\mathbf{u} = [\mathbf{u}_{s_1}^T ~\mathbf{u}_{s_2}^T\dots  \mathbf{u}_{s_{n_s}}^T]^T \in {\cal R}^{n_u}. 
+\end{equation*}
+and $\mathbf{u}_{s_i}$ is
+\begin{equation}
+\label{sectorinput}
+\mathbf{u}_{s_i}= [ u_{s_i \rightarrow s_1} \dots u_{s_i \rightarrow s_{i-1}} {\color{red}u_{s_i \rightarrow s_{i}} } u_{s_i \rightarrow s_{i+1}} \dots\\ u_{s_i \rightarrow s_{n_s}}]^T .
+\end{equation}
+Notice that Eq. \ref{sectorinput} is different from the definition in the paper. That is because ${\color{red} u_{s_i \rightarrow s_{i}}}$ is added to the $\mathbf{u}_{s_i}$ vector. \textit{However, it is always multiplied by zero}. It is added in order to make the implementation easier later on.
+Therefore, ${\color{red}n_u = n_s^2}$ in this implementation.
+
+\paragraph{Dynamics constraints}: dynamics over prediction time horizon $T_p$,
+\begin{equation}
+\label{dynamicsovertp}
+\mathbf{X}= \mathbf{T}_u \mathbf{U} + \mathbf{T}_{x_0}\mathbf{x}[0]
+\end{equation}
+
+where $\mathbf{T}_u$ is,
+\[
+\mathbf{T}_u=
+  \begin{bmatrix}
+    \mathbf{B} & \cdots & \mathbf{0} \\
+    \mathbf{B} & \mathbf{B} & \cdots & \mathbf{0}\\
+    \cdots & \vdots & \cdots\\
+    \mathbf{B} & \mathbf{B} & \cdots & \mathbf{B}
+  \end{bmatrix}_{(n_s T_p) \times (n_u T_p)}
+\]
+and,
+\[
+\mathbf{T}_{x_0}\mathbf{x}[0]=
+\begin{bmatrix}
+\mathbf{x}[0]\\
+\vdots \\
+\mathbf{x}[0]
+\end{bmatrix}_{n_s T_p \times 1}
+\]
+Assuming that the optimization vector is,
+\begin{equation}
+\label{optimizationvector}
+\hat{\mathbf{X}} = 
+\begin{bmatrix}
+\mathbf{X} \\
+\mathbf{U}
+\end{bmatrix}_{(n_s+n_u)T_p \times 1}
+\end{equation}
+Eq \ref{dynamicsovertp} can be written as, 
+
+\begin{equation}
+\begin{bmatrix}
+\mathbf{I}_{n_s T_p} & -\mathbf{T}_u
+\end{bmatrix}
+\hat{\mathbf{X}} = \mathbf{T}_{x_0}\mathbf{x}[0]
+\end{equation}
+It can be converted to inequalities as follows,
+\begin{equation}
+\label{comapctdynamicsconstraints}
+\begin{bmatrix}
+\mathbf{I}_{n_s T_p} & -\mathbf{T}_u\\
+-\mathbf{I}_{n_s T_p} & \mathbf{T}_u
+\end{bmatrix}_{2n_s T_p \times (n_s+n_u)T_p}
+\hat{\mathbf{X}}
+\leq
+\begin{bmatrix}
+\mathbf{T}_{x_0}\mathbf{x}[0]\\
+-\mathbf{T}_{x_0}\mathbf{x}[0]
+\end{bmatrix}_{2n_s T_p \times 1}
+\end{equation}
+Which can be re-written as 
+\[
+\mathbf{A}_{\text{dynamics}} \hat{\mathbf{X}} \leq \mathbf{b}_{\text{dynamics}}
+\]
+\section{Flow Constraints}
+Flow constraints over prediction time horizon are described by,
+\begin{equation}
+\label{flowconstraints}
+\mathbf{T}_{u,c} \mathbf{U} \leq \mathbf{T}_{x_0,c} \mathbf{x}[0]
+\end{equation}
+where,
+\[
+\mathbf{T}_{u,c} =
+\begin{bmatrix}
+\mathbf{B}_{\text{out}} & \mathbf{0} & \cdots & \cdots & \mathbf{0}\\
+- \mathbf{B} & \mathbf{B}_{\text{out}} & \mathbf{0} & \cdots & \mathbf{0}\\
+- \mathbf{B} & -\mathbf{B} & \mathbf{B}_{\text{out}} & \cdots & \mathbf{0}\\
+\vdots & \vdots & \vdots & \vdots & \vdots\\
+- \mathbf{B} & - \mathbf{B} & - \mathbf{B} & - \mathbf{B} & \mathbf{B}_{\text{out}}
+
+\end{bmatrix}
+\]
+
+$\mathbf{T}_{u,c} \in \mathcal{R}^{n_s T_p \times n_u T_p}$, and 
+\[
+\mathbf{T}_{x_0,c} \mathbf{x}[0] =
+\begin{bmatrix}
+\mathbf{x}[0]\\
+\vdots \\
+\mathbf{x}[0]
+\end{bmatrix}_{n_s T_p \times 1}
+\]
+Using the same optimization vector in (\ref{optimizationvector}), constraints (\ref{flowconstraints}) can be written as,
+\begin{equation}
+\label{compactflowconstraints}
+\begin{bmatrix}
+\mathbf{0}_{n_s T_p \times n_s T_p} & \mathbf{T}_{u,c}
+\end{bmatrix}_{n_s T_p \times (n_s+n_u)T_p}
+\hat{\mathbf{X}} \leq  \mathbf{T}_{x_0,c} \mathbf{x}[0]
+\end{equation}
+which can be written as,
+\[
+\mathbf{A}_{\text{flow}} \hat{\mathbf{X}} \leq \mathbf{b}_{\text{flow}}
+\]
+
+\section{Boundary Constraints}
+Constraints on optimization vector $\hat{\mathbf{X}}$ are,
+\[
+\mathbf{0} \leq \hat{\mathbf{X}} \leq \mathbf{1}
+\]
+or,
+
+\begin{align*}
+\hat{\mathbf{X}} \leq \mathbf{1}_{(n_s+n_u)T_p} \\
+-\hat{\mathbf{X}} \leq \mathbf{0}_{(n_s+n_u)T_p}
+\end{align*}
+
+which can be written as,
+\begin{equation}
+\label{boundariesconstraints}
+\begin{bmatrix}
+\mathbf{I}\\
+-\mathbf{I}
+\end{bmatrix}_{2 (n_s+n_u)T_p \times (n_s+n_u)T_p}
+\hat{\mathbf{X}} \leq
+\begin{bmatrix}
+\mathbf{1}\\ \mathbf{0}
+\end{bmatrix}
+\end{equation}
+which can be written as
+\[
+\mathbf{A}_{\text{boundary}} \hat{\mathbf{X}} \leq \mathbf{b}_{\text{boundary}}
+\]
+
+\section{Compact LP Form}
+Using inequality (\ref{comapctdynamicsconstraints}), (\ref{compactflowconstraints}), and (\ref{boundariesconstraints}), the LP problem can be written in compact from as,
+\begin{equation}
+\begin{aligned}
+&\min_{\hat{\mathbf{X}}} \mathbf{C}^T \hat{\mathbf{X}} \\
+\text{s.t.} \;  \\
+&
+\begin{bmatrix}
+\mathbf{I}_{n_s T_p} & -\mathbf{T}_u\\
+-\mathbf{I}_{n_s T_p} & \mathbf{T}_u\\
+\mathbf{0}_{n_s T_p \times n_s T_p} & \mathbf{T}_{u,c} \\
+\mathbf{I}_{(n_s+n_u)T_p}\\
+-\mathbf{I}_{(n_s+n_u)T_p}\\
+\end{bmatrix}_{(5n_s+2n_u)Tp \times (n_s+n_u)T_p} \hat{\mathbf{X}}
+\leq
+\begin{bmatrix}
+\mathbf{T}_{x_0}\mathbf{x}[0]\\
+-\mathbf{T}_{x_0}\mathbf{x}[0]\\
+\mathbf{T}_{x_0,c} \mathbf{x}[0]\\
+\mathbf{1}_{(n_s+n_u)T_p}\\
+\mathbf{0}_{(n_s+n_u)T_p}
+\end{bmatrix}_{(5n_s+2n_u)Tp \times 1}
+\end{aligned}
+\end{equation}
+which can be written as,
+\begin{equation}
+\begin{bmatrix}
+\mathbf{A}_{\text{dynamics}}\\
+\mathbf{A}_{\text{flow}}\\
+\mathbf{A}_{\text{boundary}}
+\end{bmatrix}
+\hat{\mathbf{X}}
+\leq 
+\begin{bmatrix}
+\mathbf{b}_{\text{dynamics}}\\
+\mathbf{b}_{\text{flow}}\\
+\mathbf{b}_{\text{boundary}}
+\end{bmatrix}
+\end{equation}
+%\bibliography{IFAC_Dist.bib}
+
+\end{document}
