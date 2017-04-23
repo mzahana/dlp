@@ -263,7 +263,7 @@ class DistLP(object):
 	def solve(self):
 		print self.b
 		start_t= time.time()
-		sol=solvers.lp(matrix(self.C),matrix(self.A),matrix(self.b), solver = 'glpk.ilp')
+		sol=solvers.lp(self.C,matrix(self.A),self.b, solver = 'glpk.ilp')
 		print "Solution found in: ", time.time()-start_t, "second(s)"
 		print sol
 		return
