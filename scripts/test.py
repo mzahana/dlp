@@ -3,10 +3,10 @@ from distlp import DistLP
 import time
 
 obj = DistLP()
-obj.Nrows = 5
-obj.Ncols = 5
+obj.Nrows = 7
+obj.Ncols = 7
 
-obj.Tp = 3
+obj.Tp = 2
 
 obj.setup_problem()
 obj.solve()

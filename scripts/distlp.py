@@ -12,8 +12,8 @@ from numpy import array
 from cvxopt import matrix, spmatrix, sparse, solvers
 from math import ceil
 import time
-from scipy.optimize import linprog
-import numpy as np
+#from scipy.optimize import linprog
+#import numpy as np
 
 ''' Class definition '''
 class DistLP(object):
@@ -268,7 +268,7 @@ class DistLP(object):
 	def solve(self):
 		#print self.b
 		start_t= time.time()
-		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), A = self.Ad, b=matrix(self.X0),  solver = 'dsdp')#'glpk.ilp')
+		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), A = self.Ad, b=matrix(self.X0),  solver = 'glpk')#'glpk.ilp')
 		print "Solution found in: ", time.time()-start_t, "second(s)"
 		#print sol
 		return
