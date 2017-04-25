@@ -10,4 +10,5 @@ obj.Tp = 3
 
 obj.setup_problem()
 obj.solve()
+#obj.scipy_solve()
 #obj.setup_dynamics_constraints()

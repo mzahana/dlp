@@ -12,7 +12,8 @@ from numpy import array
 from cvxopt import matrix, spmatrix, sparse, solvers
 from math import ceil
 import time
-
+from scipy.optimize import linprog
+import numpy as np
 
 ''' Class definition '''
 class DistLP(object):
@@ -169,8 +170,9 @@ class DistLP(object):
 					t2*self.nu-self.nu:t2*self.nu]=self.B
 		# identity matrix
 		I= spmatrix(1.0, range(self.ns*self.Tp), range(self.ns*self.Tp))
+		# self.I = np.eye(self.ns*self.Tp)
 		# finally, construct dynamics matrix
-		A_dyn = sparse([[I,-1*I], [-1.0*Tu,Tu]])
+		A_dyn = sparse([[matrix(I),matrix(-1 * I)], [-1.0*Tu,Tu]])
 
 		return A_dyn
 
@@ -266,7 +268,14 @@ class DistLP(object):
 	def solve(self):
 		#print self.b
 		start_t= time.time()
-		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), solver = 'glpk')#'glpk.ilp')
+		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), solver = 'dsdp')#'glpk.ilp')
 		print "Solution found in: ", time.time()-start_t, "second(s)"
 		#print sol
+		return
+
+	def scipy_solve(self):
+		start_t = time.time()
+		#sol = linprog(array(matrix(self.C)),A_ub = array(matrix(self.A)),b_ub = array(matrix(self.b)))
+		sol = linprog(array(self.C),A_ub = array(self.A),b_ub = array(self.b))
+		print "Solution found in: ", time.time()-start_t, "second(s)"
 		return
