@@ -6,6 +6,8 @@ obj = DistLP()
 obj.Nrows = 5
 obj.Ncols = 5
 
+obj.Tp = 3
+
 obj.setup_problem()
 obj.solve()
 #obj.setup_dynamics_constraints()

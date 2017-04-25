@@ -13,6 +13,7 @@ from cvxopt import matrix, spmatrix, sparse, solvers
 from math import ceil
 import time
 
+
 ''' Class definition '''
 class DistLP(object):
 	"""docstDistLP."""
@@ -155,6 +156,8 @@ class DistLP(object):
 			self.Bout[i,:]=Bout_one_row
 			# update B matrix, row-by-row
 			self.B[i,:]=Bin_one_row - Bout_one_row
+			#print Bout_active_i
+			#print Bin_active_i
 		self.B
 		return
 	def setup_dynamics_constraints(self):
@@ -220,7 +223,7 @@ class DistLP(object):
 		# builds C, in min C.T*X
 		m=(self.ns+self.nu)*self.Tp
 		self.C=sparse(matrix(0.0,(m,1)))
-		#TODO: add wiehgted X_ref and X_enemy
+		#TODO: add weihgted X_ref and X_enemy
 		self.C[0:self.ns*self.Tp]=self.beta*self.Xref#+self.alpha*self.Xenemy
 		#self.C=matrix(self.C)
 
@@ -261,9 +264,9 @@ class DistLP(object):
 		return self.A, self.b
 
 	def solve(self):
-		print self.b
+		#print self.b
 		start_t= time.time()
-		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), solver = 'glpk.ilp')
+		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), solver = 'glpk')#'glpk.ilp')
 		print "Solution found in: ", time.time()-start_t, "second(s)"
-		print sol
+		#print sol
 		return
