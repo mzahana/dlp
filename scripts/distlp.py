@@ -172,7 +172,7 @@ class DistLP(object):
 		I= spmatrix(1.0, range(self.ns*self.Tp), range(self.ns*self.Tp))
 		# self.I = np.eye(self.ns*self.Tp)
 		# finally, construct dynamics matrix
-		A_dyn = sparse([[matrix(I),matrix(-1 * I)], [-1.0*Tu,Tu]])
+		A_dyn = sparse([[I], [-1.0*Tu]])
 
 		return A_dyn
 
@@ -251,7 +251,7 @@ class DistLP(object):
 		self.nu=self.ns**2
 		self.setup_grid_matrix()
 		self.setup_input_matrix()
-		Ad = self.setup_dynamics_constraints()
+		self.Ad = self.setup_dynamics_constraints()
 		Af = self.setup_flow_constraints()
 		Ab,bb = self.setup_boundary_constraints()
 		self.setup_initial_condition_vector()
@@ -259,8 +259,8 @@ class DistLP(object):
 		self.setup_optimization_vector()
 
 		# construct compact form optimization matrices
-		self.A = sparse([Ad, Af, Ab])
-		self.b=sparse([self.X0, -1.0*self.X0, self.X0, bb])
+		self.A = sparse([Af, Ab])
+		self.b=sparse([self.X0, bb])
 		print "Setup is done in: ", time.time()-start_t, "second(s)"
 
 		return self.A, self.b
@@ -268,7 +268,7 @@ class DistLP(object):
 	def solve(self):
 		#print self.b
 		start_t= time.time()
-		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), solver = 'dsdp')#'glpk.ilp')
+		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), A = self.Ad, b=matrix(self.X0),  solver = 'dsdp')#'glpk.ilp')
 		print "Solution found in: ", time.time()-start_t, "second(s)"
 		#print sol
 		return
