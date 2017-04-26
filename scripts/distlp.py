@@ -211,6 +211,7 @@ class DistLP(object):
 		self.x0[self.d_current_location-1]=1.0
 		n=self.ns*self.Tp
 		self.X0=sparse([self.x0 for i in range(self.Tp)])
+		self.XXXXUXU = {'x':matrix([self.X0, self.X0, self.X0, self.X0, matrix(0, (self.nu*self.Tp,1)), self.X0,  matrix(0, (self.nu*self.Tp,1))]), 's':matrix([self.X0, self.X0-matrix(1, (self.ns*self.Tp,1)), matrix(-1, (self.nu*self.Tp,1)),-1 * self.X0, matrix(0, (self.nu*self.Tp,1))])}
 
 	def get_Xref(self):
 		# builds reference vector over Tp
@@ -268,7 +269,7 @@ class DistLP(object):
 	def solve(self):
 		#print self.b
 		start_t= time.time()
-		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), A = self.Ad, b=matrix(self.X0),  solver = 'glpk')#'glpk.ilp')
+		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), A = self.Ad, b=matrix(self.X0),primalstart = self.XXXXUXU )#,solver = 'dsdp')#'glpk.ilp')
 		print "Solution found in: ", time.time()-start_t, "second(s)"
 		#print sol
 		return
