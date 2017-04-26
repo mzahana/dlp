@@ -6,7 +6,7 @@ obj = DistLP()
 obj.Nrows = 7
 obj.Ncols = 7
 
-obj.Tp = 2
+obj.Tp = 3
 
 obj.setup_problem()
 obj.solve()

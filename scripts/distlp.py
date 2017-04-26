@@ -23,8 +23,8 @@ class DistLP(object):
 
 		''' Grid structure'''
 		# rows/columns
-		self.Nrows = 5
-		self.Ncols = 5
+		self.Nrows = 7
+		self.Ncols = 7
 		self.ns = self.Ncols*self.Nrows
 		# number of inputs
 		# for implementaion pusrposes nu=ns*ns
@@ -211,7 +211,7 @@ class DistLP(object):
 		self.x0[self.d_current_location-1]=1.0
 		n=self.ns*self.Tp
 		self.X0=sparse([self.x0 for i in range(self.Tp)])
-		self.XXXXUXU = {'x':matrix([self.X0, self.X0, self.X0, self.X0, matrix(0, (self.nu*self.Tp,1)), self.X0,  matrix(0, (self.nu*self.Tp,1))]), 's':matrix([self.X0, self.X0-matrix(1, (self.ns*self.Tp,1)), matrix(-1, (self.nu*self.Tp,1)),-1 * self.X0, matrix(0, (self.nu*self.Tp,1))])}
+		self.XXXXUXU = {'x':matrix([self.X0,  matrix(0, (self.nu*self.Tp,1))]), 's':matrix(0.00001, (self.ns*self.Tp*3 + self.nu*self.Tp*2, 1)) + matrix([self.X0, matrix(1, (self.ns*self.Tp,1))-self.X0, matrix(1, (self.nu*self.Tp,1)),self.X0, matrix(0, (self.nu*self.Tp,1))])}
 
 	def get_Xref(self):
 		# builds reference vector over Tp
