@@ -155,7 +155,6 @@ class DistLP(object):
 			self.Bout[i,:]=Bout_one_row
 			# update B matrix, row-by-row
 			self.B[i,:]=Bin_one_row - Bout_one_row
-		self.B
 		return
 	def setup_dynamics_constraints(self):
 		# implements dynamics constraints (6) in implementation notes
@@ -261,9 +260,8 @@ class DistLP(object):
 		return self.A, self.b
 
 	def solve(self):
-		print self.b
 		start_t= time.time()
-		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), solver = 'glpk.ilp')
+		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), solver = 'glpk')
 		print "Solution found in: ", time.time()-start_t, "second(s)"
 		print sol
 		return
