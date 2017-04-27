@@ -6,6 +6,7 @@ CC := g++ # This is the main compiler
 #CC := clang --analyze # and comment out the linker last line for sanity
 SRCDIR := src
 BUILDDIR := build
+BIN := bin
 TARGET := testDLP
 
 SRCEXT := cpp
@@ -17,7 +18,8 @@ INC := -I include -I eigen-3.3.3
 
 $(TARGET): $(BUILDDIR)/dlp.o $(BUILDDIR)/testDLP.o
 	@echo " Linking..."
-	@echo " $(CC) $^ -o $(TARGET) $(LIB)"; $(CC) $^ -o $(TARGET) $(LIB)
+	@mkdir -p $(BIN)
+	@echo " $(CC) $^ -o $(BIN)/$(TARGET) $(LIB)"; $(CC) $^ -o $(BIN)/$(TARGET) $(LIB)
 
 $(BUILDDIR)/dlp.o: $(SRCDIR)/dlp.cpp
 	@mkdir -p $(BUILDDIR)
@@ -30,6 +32,6 @@ $(BUILDDIR)/testDLP.o: $(SRCDIR)/testDLP.cpp
 
 clean:
 	@echo " Cleaning...";
-	@echo " $(RM) -r $(BUILDDIR) $(TARGET)"; $(RM) -r $(BUILDDIR) $(TARGET)
+	@echo " $(RM) -r $(BUILDDIR) $(BIN)"; $(RM) -r $(BUILDDIR) $(BIN)
 
 .PHONY: clean
