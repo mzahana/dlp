@@ -41,7 +41,7 @@ class DistLP(object):
 		# Defense (Base) zone sectors
 		self.Base = matrix([1])
 		# Base's reference sectors
-		self.BaseRef = matrix([1,2,3,4])
+		self.BaseRef = matrix([2,6,7])
 		# Neighborhood radius
 		self.Nr = 1;
 
@@ -50,7 +50,7 @@ class DistLP(object):
 		self.Nd = 3
 		self.Ne = 3
 		# current locations of Agents
-		self.d_current_location = matrix([1,2,3],(self.Nd,1))
+		self.d_current_location = matrix([2,6,7],(self.Nd,1))
 		self.e_current_location = matrix([1,2,3],(self.Ne,1))
 		# next location
 		self.d_next_location = matrix([1,2,3],(self.Nd,1))
