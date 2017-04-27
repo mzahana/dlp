@@ -539,7 +539,7 @@ DLP::setup_problem(){
 //	auto duration = duration_cast<microseconds>( t2 - t1 ).count();
 //	cout << "Setup is done in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
-	cout << "Setup is done in " << (end-start)/( (clock_t)1000 ) << " seconds. " << endl; 
+	cout << "Setup is done in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl; 
 	return;
 
 }
@@ -557,7 +557,7 @@ DLP::solve_simplex(){
 	//auto duration = duration_cast<microseconds>( t2 - t1 ).count();
 	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock(); 
-	cout << "Problem solved in " << (end-start)/( (clock_t)1000 ) << " seconds. " << endl; 
+	cout << "Problem solved in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl; 
 }
 
 /**
@@ -573,5 +573,5 @@ DLP::solve_intp(){
 	//auto duration = duration_cast<microseconds>( t2 - t1 ).count();
 	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
-        cout << "Problem solved in " << (end-start)/( (clock_t)1000 ) << " seconds. " << endl;
+        cout << "Problem solved in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
 }
