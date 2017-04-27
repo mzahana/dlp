@@ -21,10 +21,10 @@
 #include <Eigen/Sparse>
 #include <assert.h>     /* assert */
 #include <algorithm>	/* min/max */
-#include <chrono> 		/* time measurments */
+//#include <chrono> 		/* time measurments */
 using namespace Eigen;
 using namespace std;
-using namespace std::chrono;
+//using namespace std::chrono;
 
 /**
 * Class declaration.
