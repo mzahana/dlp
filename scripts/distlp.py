@@ -12,6 +12,8 @@ from numpy import array
 from cvxopt import matrix, spmatrix, sparse, solvers
 from math import ceil
 import time
+#from scipy.optimize import linprog
+#import numpy as np
 
 ''' Class definition '''
 class DistLP(object):
@@ -21,8 +23,8 @@ class DistLP(object):
 
 		''' Grid structure'''
 		# rows/columns
-		self.Nrows = 5
-		self.Ncols = 5
+		self.Nrows = 7
+		self.Ncols = 7
 		self.ns = self.Ncols*self.Nrows
 		# number of inputs
 		# for implementaion pusrposes nu=ns*ns
@@ -155,6 +157,9 @@ class DistLP(object):
 			self.Bout[i,:]=Bout_one_row
 			# update B matrix, row-by-row
 			self.B[i,:]=Bin_one_row - Bout_one_row
+			#print Bout_active_i
+			#print Bin_active_i
+		self.B
 		return
 	def setup_dynamics_constraints(self):
 		# implements dynamics constraints (6) in implementation notes
@@ -165,8 +170,9 @@ class DistLP(object):
 					t2*self.nu-self.nu:t2*self.nu]=self.B
 		# identity matrix
 		I= spmatrix(1.0, range(self.ns*self.Tp), range(self.ns*self.Tp))
+		# self.I = np.eye(self.ns*self.Tp)
 		# finally, construct dynamics matrix
-		A_dyn = sparse([[I,-1*I], [-1.0*Tu,Tu]])
+		A_dyn = sparse([[I], [-1.0*Tu]])
 
 		return A_dyn
 
@@ -205,6 +211,7 @@ class DistLP(object):
 		self.x0[self.d_current_location-1]=1.0
 		n=self.ns*self.Tp
 		self.X0=sparse([self.x0 for i in range(self.Tp)])
+		self.XXXXUXU = {'x':matrix([self.X0,  matrix(0, (self.nu*self.Tp,1))]), 's':matrix(0.00001, (self.ns*self.Tp*3 + self.nu*self.Tp*2, 1)) + matrix([self.X0, matrix(1, (self.ns*self.Tp,1))-self.X0, matrix(1, (self.nu*self.Tp,1)),self.X0, matrix(0, (self.nu*self.Tp,1))])}
 
 	def get_Xref(self):
 		# builds reference vector over Tp
@@ -219,7 +226,7 @@ class DistLP(object):
 		# builds C, in min C.T*X
 		m=(self.ns+self.nu)*self.Tp
 		self.C=sparse(matrix(0.0,(m,1)))
-		#TODO: add wiehgted X_ref and X_enemy
+		#TODO: add weihgted X_ref and X_enemy
 		self.C[0:self.ns*self.Tp]=self.beta*self.Xref#+self.alpha*self.Xenemy
 		#self.C=matrix(self.C)
 
@@ -245,7 +252,7 @@ class DistLP(object):
 		self.nu=self.ns**2
 		self.setup_grid_matrix()
 		self.setup_input_matrix()
-		Ad = self.setup_dynamics_constraints()
+		self.Ad = self.setup_dynamics_constraints()
 		Af = self.setup_flow_constraints()
 		Ab,bb = self.setup_boundary_constraints()
 		self.setup_initial_condition_vector()
@@ -253,15 +260,16 @@ class DistLP(object):
 		self.setup_optimization_vector()
 
 		# construct compact form optimization matrices
-		self.A = sparse([Ad, Af, Ab])
-		self.b=sparse([self.X0, -1.0*self.X0, self.X0, bb])
+		self.A = sparse([Af, Ab])
+		self.b=sparse([self.X0, bb])
 		print "Setup is done in: ", time.time()-start_t, "second(s)"
 
 		return self.A, self.b
 
 	def solve(self):
+		#print self.b
 		start_t= time.time()
-		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), solver = 'glpk')
+		sol=solvers.lp(matrix(self.C),self.A,matrix(self.b), A = self.Ad, b=matrix(self.X0), solver = 'glpk')#'glpk.ilp')
 		print "Solution found in: ", time.time()-start_t, "second(s)"
-		print sol
+		#print sol
 		return

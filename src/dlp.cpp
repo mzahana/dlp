@@ -519,7 +519,10 @@ DLP::setup_problem(){
 	ns = nRows*nCols;
 	nu = ns*ns;
 
-	high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	clock_t start, end; 
+	start  = clock();
+
 	DLP::setup_gridMatrix();
 	DLP::setup_input_matrix();
 	DLP::set_X0();
@@ -532,10 +535,11 @@ DLP::setup_problem(){
 	DLP::setup_optimization_vector();
 
 	DLP::setup_glpk_problem();
-	high_resolution_clock::time_point t2 = high_resolution_clock::now();
-	auto duration = duration_cast<microseconds>( t2 - t1 ).count();
-	cout << "Setup is done in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
-
+//	high_resolution_clock::time_point t2 = high_resolution_clock::now();
+//	auto duration = duration_cast<microseconds>( t2 - t1 ).count();
+//	cout << "Setup is done in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
+	end = clock();
+	cout << "Setup is done in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl; 
 	return;
 
 }
@@ -545,12 +549,15 @@ DLP::setup_problem(){
 */
 void
 DLP::solve_simplex(){
-	high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	clock_t start, end;
+        start  = clock();
 	glp_simplex(lp, NULL);
-	high_resolution_clock::time_point t2 = high_resolution_clock::now();
-	auto duration = duration_cast<microseconds>( t2 - t1 ).count();
-	cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
-
+	//high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	//auto duration = duration_cast<microseconds>( t2 - t1 ).count();
+	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
+	end = clock(); 
+	cout << "Problem solved in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl; 
 }
 
 /**
@@ -558,10 +565,13 @@ DLP::solve_simplex(){
 */
 void
 DLP::solve_intp(){
-	high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	clock_t start, end;
+        start  = clock();
 	glp_interior(lp, NULL);
-	high_resolution_clock::time_point t2 = high_resolution_clock::now();
-	auto duration = duration_cast<microseconds>( t2 - t1 ).count();
-	cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
-
+	//high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	//auto duration = duration_cast<microseconds>( t2 - t1 ).count();
+	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
+	end = clock();
+        cout << "Problem solved in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
 }
