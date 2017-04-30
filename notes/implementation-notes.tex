@@ -172,9 +172,10 @@ which can be written as,
 
 \section{Boundary Constraints}
 Constraints on optimization vector $\hat{\mathbf{X}}$ are,
-\[
+\begin{equation}
+\label{boxConstraints}
 \mathbf{0} \leq \hat{\mathbf{X}} \leq \mathbf{1}
-\]
+\end{equation}
 or,
 
 \begin{align*}
@@ -199,7 +200,7 @@ which can be written as
 \mathbf{A}_{\text{boundary}} \hat{\mathbf{X}} \leq \mathbf{b}_{\text{boundary}}
 \]
 
-\section{Compact LP Form}
+\section{Compact Form of Constraints}
 Using inequality (\ref{comapctdynamicsconstraints}), (\ref{compactflowconstraints}), and (\ref{boundariesconstraints}), the LP problem can be written in compact from as,
 \begin{equation}
 \begin{aligned}
@@ -238,6 +239,59 @@ which can be written as,
 \mathbf{b}_{\text{boundary}}
 \end{bmatrix}
 \end{equation}
+
+\section{Notes fot GLPK Use}
+If \texttt{GLPK} is used, boundary constraints in (\ref{boxConstraints}) are not considered in constraints matrix (the rows of A). It is entered as separate types of constraints in the defined \texttt{glpk} problem.
+
+\section{Estimation of Enemy State, $\mathbf{X}^{\text{e}}$}
+Enemy state trajectory $\mathbf{X}^{\text{e}}$ is used in the LP objective vector $\mathbf{C} = \beta \mathbf{X}^{\text{ref}} + \alpha \mathbf{X}^{\text{e}}$ as follows,
+\begin{equation}
+\mathcal{J}_{T_p}(\hat{\mathbf{X}}) = min_{\hat{\mathbf{X}} }\; \mathbf{C}^T \hat{\mathbf{X}}
+\end{equation}
+
+In this implementation, the enemy state is computes based on the following linear model,
+\begin{equation}
+\mathbf{x}^{\text{e}}[t+1] = \mathbf{x}^{\text{e}}[t] + \mathbf{B}\mathbf{u}^{\text{e}}[t]
+\end{equation}
+
+where,
+\begin{equation}
+\mathbf{u}^{\text{e}}[t] = \mathbf{G}^{\text{e}} \mathbf{x}^{\text{e}}[t]
+\end{equation}
+
+Hence,
+\begin{equation}
+\label{onestepEnemyState}
+\mathbf{x}^{\text{e}}[t+1] = (\mathbf{I} + \mathbf{BG}^{\text{e}})^{t+1} \mathbf{x}^{\text{e}}_0
+\end{equation}
+
+based on (\ref{onestepEnemyState}), the enemy state trajectory can be written as,
+\begin{equation}
+\mathbf{X}^{\text{e}} = 
+\begin{bmatrix}
+(\mathbf{I} + \mathbf{BG}^{\text{e}}) \\
+(\mathbf{I} + \mathbf{BG}^{\text{e}})^{2} \\
+\vdots \\
+(\mathbf{I} + \mathbf{BG}^{\text{e}})^{T_p}
+\end{bmatrix}_{n_s T_p \times n_s}
+\mathbf{x}^{\text{e}}_0
+\end{equation}
+or,
+\[
+\mathbf{X}^{\text{e}} =\mathbf{T}_{\mathbf{G}} \; \mathbf{x}^{\text{e}}_0
+\]
+
+\paragraph{Calculation of $\mathbf{G}^{\text{e}}$}: 
+\begin{itemize}
+\item This matrix contains the probabilities that an agent moves from one sector $s_i$ to another sector $s_j \in N_{s_i}$.
+\item  $\mathbf{G} \in \mathcal{R}^{nu \times n_s}$
+\item $g_{s_i \rightarrow s_j}$ is the probability that an agent in sector $s_i$ will move to a neighbor sector $s_j$.
+\item $u_{s_i \rightarrow s_j} = g_{s_i \rightarrow s_j} \cdot x_{s_i}$
+\item Therefore, each row in $\mathbf{G}$ contains only one non-zero element, $g_{s_i \rightarrow s_j}$.
+\item The non-zero elements in matrix $\mathbf{G}$ can be accessed in a \texttt{Eigen} matrix as $g_{s_i \rightarrow s_j} = \mathbf{G}(s_i n_s - n_s + (s_j-1), s_i )$. This assumes that the matrix indexing starts from zero.
+\end{itemize}
+
+
 %\bibliography{IFAC_Dist.bib}
 
 \end{document}
