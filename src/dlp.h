@@ -32,6 +32,11 @@ using namespace std;
 class DLP
 {
 public:
+
+	/**
+	* Debug flag
+	*/
+	bool DEBUG;
 	/**
 	* Constructor.
 	* It takes no arguments.
@@ -71,13 +76,13 @@ public:
 	* @param nB number of base sectors.
 	* @param B pointer to array of base sectors.
 	*/
-	void set_Base(int nB, MatrixXi& B);
+	void set_Base(int nB, MatrixXf& B);
 	/**
 	* sets Base reference sectors
 	* @param nBref number of reference sectors.
 	* @param Bref pointer to reference sectors matrix.
 	*/
-	void set_BaseRef(int nB, MatrixXi& Bref);
+	void set_BaseRef(int nB, MatrixXf& Bref);
 	/**
 	* sets neighborhood radius.
 	* @param nr radius
@@ -87,12 +92,12 @@ public:
 	* sets current defenders locations.
 	* @param D pointer to array of defenders locations
 	*/
-	void set_d_current_locations(MatrixXi& D);
+	void set_d_current_locations(MatrixXf& D);
 	/**
 	* sets current attackers locations.
 	* @param A pointer to array of attackers locations
 	*/
-	void set_e_current_locations(MatrixXi& A);
+	void set_e_current_locations(MatrixXf& A);
 	/**
 	* sets game time.
 	* @param t game time in seconds.
@@ -120,7 +125,7 @@ public:
 	* sets initial condition vectors, x0 and X0
 	* uses Nd, d_current_locations members
 	*/
-	void set_X0();
+	void update_X0();
 
 	/**
 	* Get/accessor functions.
@@ -130,7 +135,7 @@ public:
 	* returns defenders next location to matrix pointed by Dn.
 	* @param Dn pointer to array to return to.
 	*/
-	void get_d_next_locations(MatrixXi& Dn);
+	void get_d_next_locations(MatrixXf& Dn);
 
 	/**
 	* sets up the problem variables
@@ -138,6 +143,13 @@ public:
 	* should be called before running the solve() method.
 	*/
 	void setup_problem();
+
+
+	/**
+	* Update glpk problem.
+	* updates the objective vector, and constraints bounds based on X0, Xe
+	*/
+	void update_LP();
 
 	/**
 	* solve LP using simplex method
@@ -179,22 +191,22 @@ private:
 	MatrixXf origin_shifts;
 
 	int nBase; /**< number of base sectors. */
-	MatrixXi Base; /**< Base sectors. */
+	MatrixXf Base; /**< Base sectors. */
 	bool baseIsSet;
 	int nBaseRefs; /**< number of reference sectors. */
-	MatrixXi BaseRefs; /**< reference sectors*/
+	MatrixXf BaseRefs; /**< reference sectors*/
 	bool baseRefsIsSet;
 	/**
 	* stores sector (row,col) returned by,
 	* get_sector_location().
 	*/
-	MatrixXi sector_location;
+	MatrixXf sector_location;
 
 	/**
 	* stores neighbors of a desired sector.
 	* filled by get_NeighborSectors.
 	*/
-	MatrixXi neighbor_sectors;
+	MatrixXf neighbor_sectors;
 
 	int Nr; /**< Neighborhood radius. */
 
@@ -204,17 +216,19 @@ private:
 	/**
 	* current defenders locations.
 	*/
-	MatrixXi d_current_locations;
-	bool x0IsSet;
+	MatrixXf d_current_locations;
+	bool d_locIsSet;
 	/**
 	* current attackers locations.
 	*/
-	MatrixXi e_current_locations;
+	MatrixXf e_current_locations;
+	bool e_locIsSet; /**< flag for enemy location setting. */
+
 	/**
 	* next defenders locations.
 	* computed after optimization is done.
 	*/
-	MatrixXi d_next_locations;
+	MatrixXf d_next_locations;
 
 	float Tgame; /**< game time in [sec]. */
 	int Tp; /**< predition horizon length in [units] */
@@ -242,10 +256,24 @@ private:
 	MatrixXf X0;
 
 	/**
+	* Enemy initial state.
+	*/
+	MatrixXf xe0;
+	/**
+	* Enemy state trajectory over prediciotn horizon Tp
+	*/
+	MatrixXf Xe;
+	bool XeIsSet;
+
+	/**
 	* input matrix, B= Bin- Bout.
 	*/
 	MatrixXf Bout;
 	MatrixXf B;
+	/**
+	* sparse representation of B.
+	*/
+	SparseMatrix<float> B_s;
 
 	/**
 	* Dynamics/equality constraints matrix.
@@ -269,9 +297,15 @@ private:
 	MatrixXf b_boundary;
 
 	/**
+	* Enenmy state trjectory Transformation matrix, T_G
+	*/
+	MatrixXf T_G;
+
+	/**
 	* objective vector
 	*/
 	MatrixXf C;
+	bool cIsSet;
 
 	/**
 	* glpk problem pointer
@@ -323,15 +357,34 @@ private:
 	void setup_boundary_constraints();
 
 	/**
-	* builds cost function's vector C, in min C.T*X
+	*  finds minimum distance from a sector to base
+	* @param s input sector
+	* @return minimum distance to base
 	*/
-	void setup_optimization_vector();
+	float get_min_dist_to_base(int s);
+
+	/**
+	* computes the sum of min distances to base, of neighbors of s_i
+	* inlcluding s_i.
+	* @param sector s_i
+	*/
+	float get_sum_min_distance(int s);
 
 	/**
 	* builds enemy feedback matrix, Ge
 	* TODO: needs implementation
 	*/
 	void setup_enemy_feedback_matrix();
+
+	/**
+	* Updates enemy state trajectory over Tp
+	*/
+	void update_Xe();
+
+	/**
+	* builds cost function's vector C, in min C.T*X
+	*/
+	void setup_optimization_vector();
 
 	/**
 	* sets up glpk problem

@@ -6,6 +6,7 @@
 DLP::DLP()
 {
 	// Default initilization!
+	DEBUG = false;
 	nRows = 10;
 	nCols = 10;
 
@@ -17,6 +18,8 @@ DLP::DLP()
 	origin_shifts = MatrixXf::Constant(2,1,-1.0);
 
 	nBase =1;
+	Base = MatrixXf::Constant(nBase,1,0.0);
+	Base(0,0)=1.0;
 	baseIsSet = false;
 	nBaseRefs =3;
 	baseRefsIsSet = false;
@@ -25,13 +28,15 @@ DLP::DLP()
 
 	Nd = 3; Ne = 3;
 
-	x0IsSet = false;
+	d_locIsSet = false;
 	XrefIsSet = false;
+	e_locIsSet = false;
+	XeIsSet = false;
 
 	Tgame = 60.0; Tp=3;
 	alpha = -0.99; beta = -0.01;
 
-	d_current_locations = MatrixXi::Constant(Nd,1,0);
+	d_current_locations = MatrixXf::Constant(Nd,1,0);
 	d_current_locations(0,0)=2;
 	d_current_locations(1,0)=6;
 	d_current_locations(2,0)=7;
@@ -86,9 +91,10 @@ DLP::set_Ne(int na){
 * @param B pointer to array of base sectors.
 */
 void
-DLP::set_Base(int nB, MatrixXi& B){
+DLP::set_Base(int nB, MatrixXf& B){
 	nBase = nB;
 	Base = B;
+	baseIsSet= true;
 	return;
 }
 /**
@@ -97,10 +103,11 @@ DLP::set_Base(int nB, MatrixXi& B){
 * @param Bref pointer to reference sectors matrix.
 */
 void
-DLP::set_BaseRef(int nB, MatrixXi& Bref){
+DLP::set_BaseRef(int nB, MatrixXf& Bref){
 	nBaseRefs = nB;
 	BaseRefs = Bref;
 	baseRefsIsSet = true;
+	return;
 }
 /**
 * sets neighborhood radius.
@@ -116,9 +123,9 @@ DLP::set_Nr(int nr){
 * @param D pointer to array of defenders locations
 */
 void
-DLP::set_d_current_locations(MatrixXi& D){
+DLP::set_d_current_locations(MatrixXf& D){
 	d_current_locations = D;
-	x0IsSet = true;
+	d_locIsSet = true;
 	return;
 }
 /**
@@ -126,8 +133,9 @@ DLP::set_d_current_locations(MatrixXi& D){
 * @param A pointer to array of attackers locations
 */
 void
-DLP::set_e_current_locations(MatrixXi& A){
+DLP::set_e_current_locations(MatrixXf& A){
 	e_current_locations = A;
+	e_locIsSet = true;
 	return;
 }
 /**
@@ -164,7 +172,7 @@ DLP::set_weights(float a, float b){
 * @param Dn pointer to array to return to.
 */
 void
-DLP::get_d_next_locations(MatrixXi& Dn){
+DLP::get_d_next_locations(MatrixXf& Dn){
 	Dn = d_next_locations;
 	return;
 }
@@ -197,9 +205,9 @@ DLP::get_sector_location(int s){
 	if (c == 0){
 		c = nCols;
 	}
-	sector_location = MatrixXi::Constant(2,1,0);
-	sector_location(0,0) = (int)r;
-	sector_location(1,0) = c;
+	sector_location = MatrixXf::Constant(2,1,0);
+	sector_location(0,0) = r;
+	sector_location(1,0) = (float)c;
 	return;
 }
 /**
@@ -225,7 +233,7 @@ DLP::get_NeighborSectors(int s){
 	// count neighbors & execlude s
 	int cN= ((max_r-min_r+1)*(max_c-min_c+1)) -1;
 	// initialize neighbor_sectors
-	neighbor_sectors = MatrixXi::Constant(cN,1,0);
+	neighbor_sectors = MatrixXf::Constant(cN,1,0);
 	// counter
 	int k=0;
 	// fill neighbor_sectors
@@ -394,12 +402,12 @@ DLP::set_Xref(){
 * uses Nd, d_current_locations members
 */
 void
-DLP::set_X0(){
+DLP::update_X0(){
 	// initialize vectors to zeros
 	x0 = MatrixXf::Constant(ns,1, 0.0);
 	X0 = MatrixXf::Constant(ns*Tp,1, 0.0);
 	// make usre d_current_location is set
-	assert(x0IsSet);
+	assert(d_locIsSet);
 
 	int loc=0;
 	// fill x0: one time step
@@ -415,12 +423,122 @@ DLP::set_X0(){
 }
 
 /**
+*  finds minimum distance from a sector to base
+* @param s input sector
+* @return minimum distance to base
+*/
+float
+DLP::get_min_dist_to_base(int s){
+	assert(baseIsSet);/* make sure base sectors are set */
+	/* sector location in grid (row, column) */
+	MatrixXf s_loc(2,1);
+	/* base sector's location */
+	MatrixXf b_loc(2,1);
+	/* find min distance */
+	float min_dist = 9999999.0; /* big number */
+	for (int i=0; i < nBase; i++){
+		/* get sector location of a base sector */
+		DLP::get_sector_location(Base(i,0));
+		b_loc = sector_location;
+		/* get sector location of current sector s */
+		DLP::get_sector_location(s);
+		s_loc = sector_location;
+		/* min distnace */
+		min_dist = min(min_dist, (s_loc-b_loc).norm());
+	}
+
+	return min_dist;
+}
+
+/**
+* computes the sum of min distances to base of neighbors of s_i
+* inlcluding s_i.
+* @param sector s_i
+*/
+float
+DLP::get_sum_min_distance(int s){
+	int N = DLP::get_NeighborSectors(s);
+	float sum_min_dist=0;
+	for (int i =0; i < N; i++){
+		sum_min_dist += DLP::get_min_dist_to_base(neighbor_sectors(i,0));
+	}
+	// include s_i min distance too
+	sum_min_dist += DLP::get_min_dist_to_base(s);
+	return sum_min_dist;
+}
+
+/**
+* builds enemy feedback matrix, Ge
+* see sectoin 7 in implementation notes
+* TODO: needs implementation
+*/
+void
+DLP::setup_enemy_feedback_matrix(){
+	/* define feedback G matrix. see Eq 5 in implementation notes. */
+	MatrixXf G(nu,ns);
+	G = MatrixXf::Constant(nu,ns, 0.0);
+	T_G = MatrixXf::Constant(ns*Tp,ns, 0.0);
+	MatrixXf temp_matrix(ns,ns); /* holds I +BG multiplications */
+	int N; /* count of neighbors */
+	int si=0; /* variable to store sector number */
+	int sj=0; /* variable to store neighbor sector number */
+	float sum_min_dist=0; /* for s_i neighbors' min distance to base */
+	float min_dist_sj = 0; /* for s_i min distance to base */
+
+	/* fill G non-zero entries */
+	for (int i=0; i <ns; i++){
+		si = i+1;
+		N = DLP::get_NeighborSectors(si);
+		sum_min_dist = DLP::get_sum_min_distance(si);
+		// loop over neighbors, ot fill g_{s_i -> s_j}
+		for (int j=0; j<N; j++){
+			sj = neighbor_sectors(j,0);
+			/* comput g_{s_i -> s_j} */
+			min_dist_sj = DLP::get_min_dist_to_base(sj);
+			G(si*ns-ns + (sj-1), si-1) =(sum_min_dist - min_dist_sj) / ((float)N *sum_min_dist);
+		}
+	} /* Done with G matrix */
+
+	/* build (I + BG) blocks! */
+	temp_matrix = MatrixXf::Identity(ns, ns) + B*G;
+	for (int i=0; i<Tp; i++){
+		T_G.block(i*ns,0,ns,ns) = temp_matrix;
+		temp_matrix *= temp_matrix;
+	}
+	return;
+}
+
+/**
+* Updates enemy state trajectory over Tp
+*/
+void
+DLP::update_Xe(){
+	assert(e_locIsSet);
+	// initialize vectors to zeros
+	xe0 = MatrixXf::Constant(ns,1, 0.0);
+
+	int loc=0;
+	// fill xe0: one time step
+	for (int s=0; s< Ne; s++){
+		loc=e_current_locations(s,0)-1; // -1 coz c++ starts at 0
+		xe0(loc,0)=1.0;
+	}
+
+	// update Xe
+	Xe = MatrixXf::Constant(ns*Tp,1, 0.0);
+	Xe = T_G*xe0;
+	XeIsSet = true;
+	return;
+}
+
+/**
 * builds cost function's vector C, in min C.T*X
 */
 void
 DLP::setup_optimization_vector(){
-	//assert(XrefIsSet && XeIsSet);
-	assert(XrefIsSet);
+	assert(XrefIsSet && XeIsSet);
+	//XrefIsSet  =false;
+	XeIsSet = false;
 
 	// initialization
 	int dim = (nu+ns)*Tp;
@@ -428,18 +546,11 @@ DLP::setup_optimization_vector(){
 	/* TODO: add both Xref+Xenemy
 	* adding only Xref for now, unitl Xenemy is implememnted.
 	*/
-	C.block(0,0,ns*Tp,1) = beta*Xref;
+	C.block(0,0,ns*Tp,1) = beta*Xref + alpha*Xe;
+
+	cIsSet = true;
 	return;
 
-}
-
-/**
-* builds enemy feedback matrix, Ge
-* TODO: needs implementation
-*/
-void
-DLP::setup_enemy_feedback_matrix(){
-	return;
 }
 
 /**
@@ -510,6 +621,44 @@ DLP::setup_glpk_problem(){
 }
 
 /**
+* Update glpk problem.
+* updates the objective vector, and constraints bounds based on X0, Xe
+*/
+void
+DLP::update_LP(){
+	int nEq = ns*Tp; /* number of Eq constraints */
+	int nIneq = ns*Tp; /* number of Ineq constraints */
+
+	/* prerequisit updates */
+	clock_t start, end;
+	start = clock();
+	DLP::update_X0();
+	DLP::update_Xe();
+	DLP::setup_optimization_vector();
+
+	/* NOTE: glpk indexing starts from 1 */
+
+	// set equality/dynamics constraints
+	for (int i=0; i<nEq; i++){
+		glp_set_row_bnds(lp, i+1, GLP_FX, X0(i,0), X0(i,0));
+	}
+	// set inequality/flow constraints
+	for (int i=0; i<nIneq; i++){
+		int j = i+nEq; /* add after equalities */
+		glp_set_row_bnds(lp, j+1, GLP_UP, X0(i,0), X0(i,0));
+	}
+
+	// set objective vector
+	for (int i=0; i<(ns+nu)*Tp; i++){
+		glp_set_obj_coef(lp, i+1, C(i,0));
+	}
+	end = clock();
+	if (DEBUG)
+		cout << "Problem updated in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+
+}
+
+/**
 * sets up the problem variables
 * calls all other setup member functions.
 * should be called before running the solve() method.
@@ -520,18 +669,20 @@ DLP::setup_problem(){
 	nu = ns*ns;
 
 	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
-	clock_t start, end; 
+	clock_t start, end;
 	start  = clock();
 
 	DLP::setup_gridMatrix();
 	DLP::setup_input_matrix();
-	DLP::set_X0();
+	DLP::update_X0();
 	DLP::set_Xref();
 	DLP::setup_dynamics_constraints();
 	DLP::setup_flow_constraints();
 
 	//DLP::setup_boundary_constraints();
 
+	DLP::setup_enemy_feedback_matrix();
+	DLP::update_Xe();
 	DLP::setup_optimization_vector();
 
 	DLP::setup_glpk_problem();
@@ -539,7 +690,8 @@ DLP::setup_problem(){
 //	auto duration = duration_cast<microseconds>( t2 - t1 ).count();
 //	cout << "Setup is done in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
-	cout << "Setup is done in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl; 
+	if (DEBUG)
+		cout << "Setup is done in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
 	return;
 
 }
@@ -551,13 +703,14 @@ void
 DLP::solve_simplex(){
 	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
 	clock_t start, end;
-        start  = clock();
+    start  = clock();
 	glp_simplex(lp, NULL);
 	//high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	//auto duration = duration_cast<microseconds>( t2 - t1 ).count();
 	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
-	end = clock(); 
-	cout << "Problem solved in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl; 
+	end = clock();
+	if (DEBUG)
+		cout << "Simplex solver runs in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
 }
 
 /**
@@ -567,11 +720,12 @@ void
 DLP::solve_intp(){
 	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
 	clock_t start, end;
-        start  = clock();
+    start  = clock();
 	glp_interior(lp, NULL);
 	//high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	//auto duration = duration_cast<microseconds>( t2 - t1 ).count();
 	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
-        cout << "Problem solved in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+	if (DEBUG)
+        cout << "Interior point solver runs in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
 }
