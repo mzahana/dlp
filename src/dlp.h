@@ -2,12 +2,11 @@
 * Distributed LP class header.
 */
 
+#ifndef DLP_H
+#define DLP_H
 /**
 * Includes
 */
-#ifndef DLP_H
-#define DLP_H
-
 #include "glpk.h"
 #include <iostream>
 #include <string>
@@ -161,6 +160,14 @@ public:
 	*/
 	void solve_intp();
 
+	/**
+	* Extract optimal solution.
+	* extract first input, u*[0] at time t=0
+	* extracts optimal next sector from u*[0]
+	* updates d_next_locations matrix
+	*/
+	void extract_solution();
+
 
 private:
 	/**
@@ -308,10 +315,20 @@ private:
 	bool cIsSet;
 
 	/**
+	* first optimal input u*[0]
+	*/
+	MatrixXf u0_opt;
+
+	/**
 	* glpk problem pointer
 	*/
 	glp_prob *lp;
 
+	/**
+	* Solution status.
+	* See GLPK Docs for more information.
+	*/
+	int SOL_STATUS;
 
 	/**
 	* Memeber functions.

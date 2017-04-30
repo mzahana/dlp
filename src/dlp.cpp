@@ -48,6 +48,7 @@ DLP::DLP()
 DLP::~DLP()
 {
 	// some cleaning!
+	glp_delete_prob(lp);
 }
 /**
 * sets number of grid rows.
@@ -304,8 +305,8 @@ DLP::setup_dynamics_constraints(){
 
 	// fill Tu
 	for (int t1=1; t1<=Tp; t1++){
+		r = t1*ns-ns;
 		for (int t2=1; t2<=t1; t2++){
-			r = t1*ns-ns;
 			c = t2*nu-nu;
 			Tu.block(r,c,ns,nu)= B;
 		}
@@ -344,7 +345,7 @@ DLP::setup_flow_constraints(){
 	}/* done with Tu_c */
 
 	// fill Aflow
-	Aflow.block(0,0,ns*Tp,ns*Tp) = MatrixXf::Identity(ns*Tp,ns*Tp);
+	Aflow.block(0,0,ns*Tp,ns*Tp) = MatrixXf::Zero(ns*Tp,ns*Tp);
 	Aflow.block(0,ns*Tp,ns*Tp,nu*Tp)=Tu_c;
 	Af_s = Aflow.sparseView();
 	return;
@@ -547,7 +548,6 @@ DLP::setup_optimization_vector(){
 	* adding only Xref for now, unitl Xenemy is implememnted.
 	*/
 	C.block(0,0,ns*Tp,1) = beta*Xref + alpha*Xe;
-
 	cIsSet = true;
 	return;
 
@@ -564,7 +564,7 @@ DLP::setup_glpk_problem(){
 	int nEq = ns*Tp; /* number of Eq constraints */
 	int nIneq = ns*Tp; /* number of Ineq constraints */
 	int nConst = 2*ns*Tp + 2*(ns+nu)*Tp;
-	glp_add_rows(lp, nConst);
+	glp_add_rows(lp, nEq+nIneq);
 	glp_add_cols(lp, (ns+nu)*Tp);
 
 	/* NOTE: glpk indexing starts from 1 */
@@ -576,14 +576,11 @@ DLP::setup_glpk_problem(){
 	// set inequality/flow constraints
 	for (int i=0; i<nIneq; i++){
 		int j = i+nEq; /* add after equalities */
-		glp_set_row_bnds(lp, j+1, GLP_UP, X0(i,0), X0(i,0));
+		glp_set_row_bnds(lp, j+1, GLP_UP, 0.0, X0(i,0));
 	}
-	// set box constraints
+	// set box constraints and objective vector
 	for (int i=0; i<(ns+nu)*Tp; i++){
 		glp_set_col_bnds(lp, i+1, GLP_DB, 0.0, 1.0);
-	}
-	// set objective vector
-	for (int i=0; i<(ns+nu)*Tp; i++){
 		glp_set_obj_coef(lp, i+1, C(i,0));
 	}
 
@@ -617,6 +614,8 @@ DLP::setup_glpk_problem(){
 		}
 	}
 
+	// check if matrix is correct
+	//int chk= glp_check_dup(nEq+nIneq, (ns+nu)*Tp, nnzEq+nnzIneq, ia, ja);
 	glp_load_matrix(lp, nnzEq+nnzIneq, ia, ja, ar);
 }
 
@@ -704,13 +703,18 @@ DLP::solve_simplex(){
 	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
 	clock_t start, end;
     start  = clock();
-	glp_simplex(lp, NULL);
+	SOL_STATUS = glp_simplex(lp, NULL);
+	if (SOL_STATUS != 0){
+		cout << "There is a problem in solution." << endl;
+	}
 	//high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	//auto duration = duration_cast<microseconds>( t2 - t1 ).count();
 	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
-	if (DEBUG)
+	if (DEBUG){
 		cout << "Simplex solver runs in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << "obj value = " <<  glp_get_obj_val(lp) << endl;
+	}
 }
 
 /**
@@ -721,11 +725,78 @@ DLP::solve_intp(){
 	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
 	clock_t start, end;
     start  = clock();
-	glp_interior(lp, NULL);
+	SOL_STATUS = glp_interior(lp, NULL);
+	if (SOL_STATUS != 0){
+		cout << "There is a problem in solution." << endl;
+	}
 	//high_resolution_clock::time_point t2 = high_resolution_clock::now();
 	//auto duration = duration_cast<microseconds>( t2 - t1 ).count();
 	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
-	if (DEBUG)
+	if (DEBUG){
         cout << "Interior point solver runs in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << "obj value = " <<  glp_get_obj_val(lp) << endl;
+	}
+
+		return;
+}
+
+/**
+* Extract optimal solution.
+* extract first input, u*[0] at time t=0
+* extracts optimal next sector from u*[0]
+* updates d_next_locations matrix
+*/
+void
+DLP::extract_solution(){
+	// initialize first optimal input vector
+	u0_opt = MatrixXf::Constant(nu,1,0.0);
+	// init d_next_locations
+	d_next_locations = MatrixXf::Constant(Nd,1,0.0);
+	//fill u0_opt
+	for (int i=0; i<nu; i++){
+		u0_opt(i,0)=glp_get_col_prim(lp, (i+1)+ns*Tp);
+	}
+
+	// DEBUG
+	/*
+	cout << "PRINT SOLUTION -----" << endl;
+	for (int i=0; i<(nu+ns)*Tp; i++){
+		cout << glp_get_col_prim(lp, i+1)<< endl;
+	}
+	cout << "END OF SOL--------"<< endl;
+	*/
+
+
+	/**
+	* find next optimal sectors from u0_opt.
+	* for each sector in d_current_locations, find inputs leading to neighbors
+	* among neighbors, select sector that has highest input amount
+	*/
+	int si, sj; /* sectors */
+	int N; /* count of neighbors */
+	float min_value;
+	for (int a=0; a<Nd; a++){
+		si = d_current_locations(a,0);
+		// get neighbors
+		N = DLP::get_NeighborSectors(si);
+		// loop over neighbors
+		min_value = 0.0;
+		//cout <<endl<< "[DEBUG]:----------"<<endl;
+		//cout << "[DEBUG] u0_N = "<< endl;
+		d_next_locations(a,0) = d_current_locations(a,0);
+		for (int j=0; j<N; j++){
+			sj = neighbor_sectors(j,0);
+			//cout << u0_opt(si*ns-ns+(sj-1),0) << " , ";
+			if( u0_opt(si*ns-ns+(sj-1),0) > min_value ){
+				min_value = u0_opt(si*ns-ns+(sj-1),0);
+				d_next_locations(a,0) = sj;
+			}
+			/* TODO: implement the case if equal weights are assigned
+			* to neighbors. Probably, choosing sector that is closer to base?!
+			*/
+		} /* done looping over neighbors */
+	} /* done looping over agents' current locations */
+	cout <<endl;
+	return;
 }
