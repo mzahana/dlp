@@ -1,3 +1,6 @@
 build/
 bin/
 scripts/distlp.pyc
+notes/implementation-notes.aux
+notes/implementation-notes.log
+notes/implementation-notes.synctex.gz
