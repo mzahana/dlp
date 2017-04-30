@@ -288,7 +288,7 @@ or,
 \item $g_{s_i \rightarrow s_j}$ is the probability that an agent in sector $s_i$ will move to a neighbor sector $s_j$.
 \item $u_{s_i \rightarrow s_j} = g_{s_i \rightarrow s_j} \cdot x_{s_i}$
 \item Therefore, each row in $\mathbf{G}$ contains only one non-zero element, $g_{s_i \rightarrow s_j}$.
-\item The non-zero elements in matrix $\mathbf{G}$ can be accessed in a \texttt{Eigen} matrix as $g_{s_i \rightarrow s_j} = \mathbf{G}(s_i n_s - n_s + (s_j-1), s_i )$. This assumes that the matrix indexing starts from zero.
+\item The non-zero elements in matrix $\mathbf{G}$ can be accessed in a \texttt{Eigen} matrix as $g_{s_i \rightarrow s_j} = \mathbf{G}(s_i n_s - n_s + (s_j-1), s_i -1 )$. This assumes that matrix indexing starts from zero, which is the case if \texttt{Eigen} matrix is used.
 \end{itemize}
 
 
