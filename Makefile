@@ -18,6 +18,12 @@ CFLAGS := -g # -Wall
 LIB := -lm -lglpk
 INC := -I include -I eigen-3.3.3
 
+# build all
+.PHONY: all
+all : msg $(TEST_DLP)  $(TEST_EIG)
+msg:
+	@echo "################## Building all test files ##################"
+
 # build of DLP class, testDLP
 $(TEST_DLP): $(BUILDDIR)/dlp.o $(BUILDDIR)/testDLP.o
 	@echo " Linking..."
@@ -41,9 +47,7 @@ $(BUILDDIR)/testEigen.o: $(TESTDIR)/testEigen.cpp
 	@mkdir -p $(BUILDDIR)
 	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
-
+.PHONY: clean
 clean:
 	@echo " Cleaning...";
 	@echo " $(RM) -r $(BUILDDIR) $(BIN)"; $(RM) -r $(BUILDDIR) $(BIN)
-
-.PHONY: clean
