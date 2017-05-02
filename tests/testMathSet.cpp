@@ -21,5 +21,7 @@ int main () {
     std::cout << ' ' << *it;
   std::cout << '\n';
 
+  std::cout<<"v2: "<< v[1] << "\n";
+
   return 0;
 }

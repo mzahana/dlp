@@ -3,10 +3,12 @@
 #include <Eigen/Sparse>
 //using Eigen::MatrixXi;
 using Eigen::Matrix;
+using namespace std;
 
 
 typedef Matrix<int, 2, 2> Mat2i;
 typedef Matrix<int, 10, 1> Vec10i;
+std::vector<int>::iterator it;
 
 void set_Base(int nB, Eigen::MatrixXf& B);
 
@@ -32,6 +34,7 @@ int main()
 
   v(0,0)=1;
   v(9,0)=2;
+  cout << "size of vector v: " << v.size() << endl;
 
   int j=0;
   for (int i=0; i < v.rows(); ++i)
@@ -46,6 +49,10 @@ int main()
 
   // dynamics allocation
   Eigen::MatrixXf xi;
+  // vectors
+  Eigen::VectorXf vf(3);
+  vf(0)=0; vf(1)=0; vf(2)=1;
+  cout << "length of vector vf: "<< vf.size()<<endl;
   xi = Eigen::MatrixXf::Constant(10,1,2.1);
 
   std::cout << "non-zero elements = " << S.nonZeros() << std::endl;
@@ -54,6 +61,17 @@ int main()
   Eigen::MatrixXf xp;
   set_Base(10, xp);
   std::cout << "B=" << std::endl << xp << std::endl;
+
+  cout << "printing vf "<< vf.transpose()<< endl;
+
+  // converting from Eigen matrix to C array
+  float *arr;
+  arr = vf.data();
+  cout << "printing C array retreived from Eigen matrix, arr = ";
+  for (int i=0; i< vf.size(); i++)
+  	cout << arr[i] << " ";
+  cout << "\n";
+
 
 }
 
