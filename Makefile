@@ -8,7 +8,8 @@ SRCDIR := src
 TESTDIR := tests
 BUILDDIR := build
 BIN := bin
-TARGET := testDLP
+TEST_DLP := testDLP
+TEST_EIG := testEigen
 
 SRCEXT := cpp
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
@@ -18,24 +19,24 @@ LIB := -lm -lglpk
 INC := -I include -I eigen-3.3.3
 
 # build of DLP class, testDLP
-$(TARGET): $(BUILDDIR)/dlp.o $(BUILDDIR)/testDLP.o
+$(TEST_DLP): $(BUILDDIR)/dlp.o $(BUILDDIR)/testDLP.o
 	@echo " Linking..."
 	@mkdir -p $(BIN)
-	@echo " $(CC) $^ -o $(BIN)/$(TARGET) $(LIB)"; $(CC) $^ -o $(BIN)/$(TARGET) $(LIB)
+	@echo " $(CC) $^ -o $(BIN)/$(TEST_DLP) $(LIB)"; $(CC) $^ -o $(BIN)/$(TEST_DLP) $(LIB)
 
 $(BUILDDIR)/dlp.o: $(SRCDIR)/dlp.cpp
 	@mkdir -p $(BUILDDIR)
 	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
-$(BUILDDIR)/testDLP.o: $(SRCDIR)/testDLP.cpp
+$(BUILDDIR)/testDLP.o: $(TESTDIR)/testDLP.cpp
 	@mkdir -p $(BUILDDIR)
 	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
-# build of tests insinde tests folder
-# 1- testEigen
-testEigen: $(BUILDDIR)/testEigen.o
+
+# build testEigen
+$(TEST_EIG): $(BUILDDIR)/testEigen.o
 	@echo " Linking..."
 	@mkdir -p $(BIN)
-	@echo " $(CC) $^ -o $(BIN)/testEigen"; $(CC) $^ -o $(BIN)/testEigen
+	@echo " $(CC) $^ -o $(BIN)/$(TEST_EIG)"; $(CC) $^ -o $(BIN)/$(TEST_EIG)
 $(BUILDDIR)/testEigen.o: $(TESTDIR)/testEigen.cpp
 	@mkdir -p $(BUILDDIR)
 	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
