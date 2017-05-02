@@ -5,6 +5,7 @@
 CC := g++ # This is the main compiler
 #CC := clang --analyze # and comment out the linker last line for sanity
 SRCDIR := src
+TESTDIR := tests
 BUILDDIR := build
 BIN := bin
 TARGET := testDLP
@@ -16,6 +17,7 @@ CFLAGS := -g # -Wall
 LIB := -lm -lglpk
 INC := -I include -I eigen-3.3.3
 
+# build of DLP class, testDLP
 $(TARGET): $(BUILDDIR)/dlp.o $(BUILDDIR)/testDLP.o
 	@echo " Linking..."
 	@mkdir -p $(BIN)
@@ -26,6 +28,15 @@ $(BUILDDIR)/dlp.o: $(SRCDIR)/dlp.cpp
 	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
 $(BUILDDIR)/testDLP.o: $(SRCDIR)/testDLP.cpp
+	@mkdir -p $(BUILDDIR)
+	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
+# build of tests insinde tests folder
+# 1- testEigen
+testEigen: $(BUILDDIR)/testEigen.o
+	@echo " Linking..."
+	@mkdir -p $(BIN)
+	@echo " $(CC) $^ -o $(BIN)/testEigen"; $(CC) $^ -o $(BIN)/testEigen
+$(BUILDDIR)/testEigen.o: $(TESTDIR)/testEigen.cpp
 	@mkdir -p $(BUILDDIR)
 	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
