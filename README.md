@@ -46,7 +46,7 @@ make testDLP
 make clean
 ```
 
-# Using Python
+# Using Python (Not Complete Yet)
 * make sure you install ```cvxopt``` toolbox
 * check the ```test.py``` for a template
 * to run,
