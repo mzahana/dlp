@@ -4,7 +4,7 @@ Implementation of Distributed Linear Program in Multi-agent Pursuit-Evasion Game
 # Installation
 If you are going to use Pyhon version, you need to install GLPK, and CVXOPT toolboxes. Otherwise, only GLPK is required.
 GLPK is already included in this repo. To install it,
-* ```cd``` to ```glpk``` folder and run the folloing commands in sequence,
+```cd``` to ```glpk``` folder and run the folloing commands in sequence,
 ```
 ./configure
 make # to compile GLPK Libs
@@ -27,6 +27,12 @@ make check # running test files to check if GLPK runs OK!
 make install
 ```
 Then, try to  compile DLP test files again, following the below section.
+
+To use the Python DLP class, you need to install CVXOPT. See [CVXOPT](http://cvxopt.org/install/index.html) documentaion for more info. The simplest way to install cvxopt is to run,
+```
+pip install cvxopt
+```
+However, you might need to install it from source, in case you get errors.
 
 # Using C++
 * make sure to install GLPK in the default paths
