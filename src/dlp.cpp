@@ -1,11 +1,20 @@
 #include "dlp.h"
 
 /**
+* TODO
+*	- implement obstacle avoidance (equality constraints) [NOT NEEDED?]
+*	- implement utility function to convert sector location to ENU and vice versa.
+* 	- implement sense_neighborhood()
+*/
+
+/**
 * Constructor
 */
 DLP::DLP()
 {
 	// Default initilization!
+	myID =1;
+
 	DEBUG = false;
 	nRows = 10;
 	nCols = 10;
@@ -41,6 +50,9 @@ DLP::DLP()
 	d_current_locations(1,0)=6;
 	d_current_locations(2,0)=7;
 	d_next_locations = d_current_locations;
+
+	my_current_location = d_current_locations(myID,0);
+	my_next_location = my_current_location;
 }
 /**
 * Destructor
@@ -50,6 +62,50 @@ DLP::~DLP()
 	// some cleaning!
 	glp_delete_prob(lp);
 }
+
+/**
+* set this agent's ID.
+* @param id is agent ID \in {1,2, ..., Nd}
+*/
+void
+DLP::set_myID(int id){
+	myID = id;
+}
+
+/**
+* returns this agent's ID, if set, or zero otherwise.
+* @return this agent's ID
+*/
+int
+DLP::get_myID(){
+	return myID;
+}
+
+/**
+* Sets this agent's current location
+*/
+void
+DLP::set_my_current_location(float loc){
+	my_current_location = loc;
+}
+
+/**
+* Returns this agent's current location.
+*/
+float
+DLP::get_my_current_location(){
+	return my_current_location;
+}
+
+/**
+* Gets this agent's next location, after optimization is done
+* @return my_next_location
+*/
+float
+DLP::get_my_next_location(){
+	return my_next_location;
+}
+
 /**
 * sets number of grid rows.
 * @param nr number of rows.
@@ -74,7 +130,12 @@ DLP::set_nCols(int nc){
 */
 void
 DLP::set_Nd(int nd){
-	Nd = nd;
+	if (nd >0)
+		Nd = nd;
+	else{
+		cout << "Number of defenders should be > 0. Resetting to default=1";
+		Nd =1;
+	}
 	return;
 }
 /**
@@ -129,6 +190,7 @@ DLP::set_d_current_locations(MatrixXf& D){
 	d_locIsSet = true;
 	return;
 }
+
 /**
 * sets current attackers locations.
 * @param A pointer to array of attackers locations
@@ -141,7 +203,7 @@ DLP::set_e_current_locations(MatrixXf& A){
 }
 /**
 * sets game time.
-* @param t game time in seconds.
+* @param t game time in [seconds].
 */
 void
 DLP::set_Tgame(float t){
@@ -177,6 +239,44 @@ DLP::get_d_next_locations(MatrixXf& Dn){
 	Dn = d_next_locations;
 	return;
 }
+
+/**
+* Sets sector locations of sensed neighbors.
+* This typiclly comes from some sensing mechanism.
+* Locations of sensed neighbors are used for collision avoidance.
+*/
+void
+DLP::set_sensed_neighbors(MatrixXf& mat){
+	sensed_neighbors = mat;
+}
+
+/**
+* Returns number of sensed neighbors.
+* @return number of sensed neighbors.
+*/
+int
+DLP::get_N_sensed_neighbors(){
+	return N_sensed_neighbors;
+}
+
+/**
+* Returns pointer to vector of sensed neighbors.
+* @return pointer to vector of sensed neighbors.
+*/
+MatrixXf&
+DLP::get_sensed_neighbors(){
+	return sensed_neighbors;
+}
+
+/**
+* Returns neighbors' next locations.
+* @return vector of neighbors' next locations.
+*/
+MatrixXf&
+DLP::get_neighbor_next_locations(){
+	return neighbor_next_locations;
+}
+
 /**
 * constructs sectors matrix, S.
 */
@@ -248,6 +348,46 @@ DLP::get_NeighborSectors(int s){
 	}/* done filling */
 	return cN;
 }
+
+/**
+* returns a set of neighbor secors of sector [s] \in {s_1, ..., s_n}
+* within neighborhood length defined by L
+* @param s sector number
+* @param L, length of neighborhood
+* @return count of neighbor sectors.
+*/
+int
+DLP::get_NeighborSectors(int s, int L){
+	// store sector location in sector_location
+	DLP::get_sector_location(s);
+	int r= sector_location(0,0);
+	int c= sector_location(1,0);
+
+	// get neighbor rows and columns
+	// get min/max rows/clos with in radius Nr
+	int max_r = min(nRows,r+L);
+	int min_r = max(1, r-L);
+	int max_c = min(nCols, c+L);
+	int min_c = max(1,c-L);
+
+	// count neighbors & execlude s
+	int cN= ((max_r-min_r+1)*(max_c-min_c+1)) -1;
+	// initialize neighbor_sectors
+	neighbor_sectors = MatrixXf::Constant(cN,1,0);
+	// counter
+	int k=0;
+	// fill neighbor_sectors
+	for (int i=min_r; i<=max_r; i++){
+		for (int j=min_c; j<=max_c; j++){
+			if (!(i==r && j==c))/*execlude current s*/{
+				neighbor_sectors(k,0)=S(i-1,j-1);
+				k++;
+			}
+		}
+	}/* done filling */
+	return cN;
+}
+
 /**
 * sets input matrices B and Bout
 */
@@ -399,7 +539,7 @@ DLP::set_Xref(){
 	return;
 }
 /**
-* sets initial condition vectors, x0 and X0
+* sets initial condition vectors, x0 and X0 for centralized LP.
 * uses Nd, d_current_locations members
 */
 void
@@ -420,6 +560,44 @@ DLP::update_X0(){
 			X0((t+1)*ns-ns+loc,0)=1.0;
 		}
 	}
+	return;
+}
+
+/**
+* sets initial condition vectors, x0 and X0 for distributed LP.
+* uses Nd, d_current_locations members, sensed_neighbors
+*/
+void
+DLP::update_X0_dist(){
+	// initialize vectors to zeros
+	x0 = MatrixXf::Constant(ns,1, 0.0);
+	X0 = MatrixXf::Constant(ns*Tp,1, 0.0);
+	// make usre d_current_location is set
+	assert(d_locIsSet);
+
+	// sense neighbors
+	DLP::sense_neighbors();
+
+	int loc=0;
+	// fill x0: one time step
+	if (N_sensed_neighbors>0){
+		for (int s=0; s< N_sensed_neighbors; s++){
+			loc=sensed_neighbors(s,0)-1; // -1 coz c++ starts at 0
+			x0(loc,0)=1.0;
+			// fill X0: over Tp
+			for (int t=0; t<Tp; t++){
+				X0((t+1)*ns-ns+loc,0)=1.0;
+			}
+		}
+	}
+	// fill my location
+	// for 1-time step
+	x0(my_current_location-1)=1.0;
+	// over Tp
+	for (int t=0; t<Tp; t++){
+		X0((t+1)*ns-ns+my_current_location-1,0)=1.0;
+	}
+
 	return;
 }
 
@@ -471,7 +649,6 @@ DLP::get_sum_min_distance(int s){
 /**
 * builds enemy feedback matrix, Ge
 * see sectoin 7 in implementation notes
-* TODO: needs implementation
 */
 void
 DLP::setup_enemy_feedback_matrix(){
@@ -544,9 +721,7 @@ DLP::setup_optimization_vector(){
 	// initialization
 	int dim = (nu+ns)*Tp;
 	C = MatrixXf::Constant(dim,1,0.0);
-	/* TODO: add both Xref+Xenemy
-	* adding only Xref for now, unitl Xenemy is implememnted.
-	*/
+	// fill objective vector
 	C.block(0,0,ns*Tp,1) = beta*Xref + alpha*Xe;
 	cIsSet = true;
 	return;
@@ -620,8 +795,71 @@ DLP::setup_glpk_problem(){
 }
 
 /**
-* Update glpk problem.
-* updates the objective vector, and constraints bounds based on X0, Xe
+* TODO
+* Updates the collision-avoidance constraint, Xobs.
+* generates a set of sectors, for 1 time step ahead,
+* that agent should avoid in the next time step.
+* It generates a set of 1-time-step reachable sectors of all agents that are 2 hops away.
+* Then, it intersects this with its 1-time-step reachable sectors.
+* the result set is execluded from next possible sectors.
+* NOTE: THIS ACTUALLY IS EQUIVALENT TO CONSIDERING THE SENSING NEIGHBORHOOD
+* TO BE EQUAL TO THE SET OF 2-TIME-STEP REACHABLE SECTORS,
+* WHICH ARE DEFINED BY DYNAMICS
+*/
+void
+DLP::update_collision_constraint(){}
+
+/**
+* Simulates neighbors sensing.
+* It selects agents that belong to sensing neighborhood.
+* Sensing neighborhood is assumed to be 2 hops away.
+* updates the N_sensed_neighbors, sensed_neighbors
+*/
+void
+DLP::sense_neighbors(){
+
+	// get my neighbors
+	int L =2; /* radius of sensing; 2 hops */
+	int N =DLP::get_NeighborSectors(my_current_location,L);
+	float N_set[N]; /* C array of set of neighbors, myself included*/
+	for (int i=0; i< N ; i++){
+		N_set[i] = neighbor_sectors(i,0);
+	}
+	// get other agents sectors
+	float others_set[Nd];
+	int k=0;
+	for (int i=0; i< Nd; i++){
+		others_set[i]=d_current_locations(i,0);
+	}
+	vector<int> intersection_set(Nd);// vector stores intersection set
+	std::vector<int>::iterator it;
+	sort(N_set,N_set+N);
+	sort(others_set,others_set+Nd);
+	it=std::set_intersection (N_set, N_set+N, others_set, others_set+Nd, intersection_set.begin());
+    intersection_set.resize(it-intersection_set.begin());
+	N_sensed_neighbors = intersection_set.size();
+	// fill sensed_neighbors matrix
+	if (N_sensed_neighbors>0){
+		// initialize the size
+		sensed_neighbors = MatrixXf::Constant(N_sensed_neighbors,1,0.0);
+		// fill
+		for (int i=0; i<N_sensed_neighbors; i++){
+			sensed_neighbors(i,0)=intersection_set[i];
+		}
+	}
+	if (DEBUG){
+		if (N_sensed_neighbors>0){
+			cout << "Sensed neighbors: "<< sensed_neighbors.transpose() << "\n";
+		}else{
+			cout << "No neighbors inside the sensed area." << "\n";
+		}
+	}
+
+}
+
+/**
+* Update glpk problem. This is the centralized versoin.
+* Updates the objective vector, and constraints bounds based on X0, Xe
 */
 void
 DLP::update_LP(){
@@ -632,6 +870,44 @@ DLP::update_LP(){
 	clock_t start, end;
 	start = clock();
 	DLP::update_X0();
+	DLP::update_Xe();
+	DLP::setup_optimization_vector();
+
+	/* NOTE: glpk indexing starts from 1 */
+
+	// set equality/dynamics constraints
+	for (int i=0; i<nEq; i++){
+		glp_set_row_bnds(lp, i+1, GLP_FX, X0(i,0), X0(i,0));
+	}
+	// set inequality/flow constraints
+	for (int i=0; i<nIneq; i++){
+		int j = i+nEq; /* add after equalities */
+		glp_set_row_bnds(lp, j+1, GLP_UP, X0(i,0), X0(i,0));
+	}
+
+	// set objective vector
+	for (int i=0; i<(ns+nu)*Tp; i++){
+		glp_set_obj_coef(lp, i+1, C(i,0));
+	}
+	end = clock();
+	if (DEBUG)
+		cout << "Problem updated in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+
+}
+
+/**
+* Update glpk problem. This is the distributed version.
+* Updates the objective vector, and constraints bounds based on X0, Xe
+*/
+void
+DLP::update_LP_dist(){
+	int nEq = ns*Tp; /* number of Eq constraints */
+	int nIneq = ns*Tp; /* number of Ineq constraints */
+
+	/* prerequisit updates */
+	clock_t start, end;
+	start = clock();
+	DLP::update_X0_dist();
 	DLP::update_Xe();
 	DLP::setup_optimization_vector();
 
@@ -742,13 +1018,13 @@ DLP::solve_intp(){
 }
 
 /**
-* Extract optimal solution.
+* Extract optimal centralized solution.
 * extract first input, u*[0] at time t=0
 * extracts optimal next sector from u*[0]
 * updates d_next_locations matrix
 */
 void
-DLP::extract_solution(){
+DLP::extract_centralized_solution(){
 	// initialize first optimal input vector
 	u0_opt = MatrixXf::Constant(nu,1,0.0);
 	// init d_next_locations
@@ -780,23 +1056,121 @@ DLP::extract_solution(){
 		si = d_current_locations(a,0);
 		// get neighbors
 		N = DLP::get_NeighborSectors(si);
-		// loop over neighbors
+		// // init min value of optimal inputs
 		min_value = 0.0;
 		//cout <<endl<< "[DEBUG]:----------"<<endl;
 		//cout << "[DEBUG] u0_N = "<< endl;
+		/**
+		* NOTE: Here we initialize next location using the current location.
+		* if all optimal inputs that take s_i to s_j \in N(s_i) are zeros, then
+		* next location should not change.
+		* Hence, it's equal to current location.
+		*/
 		d_next_locations(a,0) = d_current_locations(a,0);
 		for (int j=0; j<N; j++){
 			sj = neighbor_sectors(j,0);
 			//cout << u0_opt(si*ns-ns+(sj-1),0) << " , ";
 			if( u0_opt(si*ns-ns+(sj-1),0) > min_value ){
 				min_value = u0_opt(si*ns-ns+(sj-1),0);
+				// will only update if at least one input > 0
 				d_next_locations(a,0) = sj;
 			}
 			/* TODO: implement the case if equal weights are assigned
 			* to neighbors. Probably, choosing sector that is closer to base?!
 			*/
 		} /* done looping over neighbors */
-	} /* done looping over agents' current locations */
+	} /* done looping over d_next_locations */
 	cout <<endl;
+	return;
+}
+
+
+/**
+* Extract optimal local/distributed solution.
+* extract first input, u*[0] at time t=0
+* extracts optimal next sector from u*[0]
+* updates d_next_local_locations vector
+*/
+void
+DLP::extract_local_solution(){
+	// initialize first optimal input vector
+	u0_opt = MatrixXf::Constant(nu,1,0.0);
+	// Augmented next locations: mine \union neighbors
+	d_next_local_locations = MatrixXf::Constant(N_sensed_neighbors+1,1,0.0);
+	// Augmented current locations: mine \union neighbors
+	d_current_local_locations = MatrixXf::Constant(N_sensed_neighbors+1,1,0.0);
+	// put my current location in the 1st element
+	d_current_local_locations(0,0) = my_current_location;
+	// augment current neighbors locations if available
+	if (N_sensed_neighbors>0){
+		for (int i = 0; i< N_sensed_neighbors; i++){
+			d_current_local_locations(i+1,0)=sensed_neighbors(i,0);
+		}
+	}
+
+	// init neighbors next locations, if there is any
+	if (N_sensed_neighbors > 0)
+		neighbor_next_locations = MatrixXf::Constant(N_sensed_neighbors,1,0.0);
+
+	//extract u0_opt: 1st optimal input (at t=0)
+	for (int i=0; i<nu; i++){
+		u0_opt(i,0)=glp_get_col_prim(lp, (i+1)+ns*Tp);
+	}
+
+	// DEBUG
+	/*
+	cout << "PRINT SOLUTION -----" << endl;
+	for (int i=0; i<(nu+ns)*Tp; i++){
+		cout << glp_get_col_prim(lp, i+1)<< endl;
+	}
+	cout << "END OF SOL--------"<< endl;
+	*/
+
+
+	/**
+	* Extract next optimal sectors from u0_opt.
+	* For each sector in d_current_locations, find inputs leading to neighbors
+	* Among neighbors, select sector that has highest input weight (u_{si->sj})
+	*/
+	int si, sj; /* sectors */
+	int N; /* count of neighbors */
+	float min_value;
+	for (int a=0; a<N_sensed_neighbors+1; a++){
+		si = d_current_local_locations(a,0);
+		// get neighbors: stored in neighbor_sectors vector
+		N = DLP::get_NeighborSectors(si);
+		// init min value of optimal inputs
+		min_value = 0.0;
+		//cout <<endl<< "[DEBUG]:----------"<<endl;
+		//cout << "[DEBUG] u0_N = "<< endl;
+		/**
+		* NOTE: Here we initialize next location using the current location.
+		* if all optimal inputs that take s_i to s_j \in N(s_i) are zeros, then
+		* next location should not change. Hence, it's equal to current location.
+		*/
+		d_next_local_locations(a,0) = d_current_local_locations(a,0);
+		for (int j=0; j<N; j++){
+			sj = neighbor_sectors(j,0);
+			//cout << u0_opt(si*ns-ns+(sj-1),0) << " , ";
+			if( u0_opt(si*ns-ns+(sj-1),0) > min_value ){
+				min_value = u0_opt(si*ns-ns+(sj-1),0);
+				// will only update if at least one input > 0
+				d_next_local_locations(a,0) = sj;
+			}
+			/* TODO: implement the case if equal weights are assigned
+			* to neighbors. Probably, choosing sector that is closer to base?!
+			*/
+		} /* done looping over neighbors */
+	} /* done looping over d_next_local_locations */
+	//cout <<endl;
+
+	// update my_next_location
+	my_next_location = d_next_local_locations(0,0);// 1st element
+	// update neighbors next locations, if available
+	if (N_sensed_neighbors>0){
+		for (int i=0; i<N_sensed_neighbors; i++){
+			neighbor_next_locations(i,0)=d_next_local_locations(i+1,0);
+		}
+	}
 	return;
 }

@@ -20,6 +20,7 @@
 #include <Eigen/Sparse>
 #include <assert.h>     /* assert */
 #include <algorithm>	/* min/max */
+#include <vector>       // std::vector
 //#include <chrono> 		/* time measurments */
 using namespace Eigen;
 using namespace std;
@@ -49,6 +50,22 @@ public:
 	/**
 	* Set functions.
 	*/
+
+	/**
+	* set this agent's ID.
+	* @param id is agent ID \in {1,2, ..., Nd}
+	*/
+	void set_myID(int id);
+
+	/**
+	* Sets this agent's current location
+	*/
+	void set_my_current_location(float loc);
+
+	/**
+	* Returns this agent's current location.
+	*/
+	float get_my_current_location();
 
 	/**
 	* sets number of grid rows.
@@ -121,20 +138,39 @@ public:
 	void set_Xref();
 
 	/**
-	* sets initial condition vectors, x0 and X0
+	* sets initial condition vectors, x0 and X0 for centralized LP.
 	* uses Nd, d_current_locations members
 	*/
 	void update_X0();
+
+	/**
+	* sets initial condition vectors, x0 and X0 for distributed LP.
+	* uses Nd, d_current_locations members, sensed_neighbors
+	*/
+	void update_X0_dist();
 
 	/**
 	* Get/accessor functions.
 	*/
 
 	/**
+	* returns this agent's ID, if set, or zero otherwise.
+	* @return this agent's ID
+	*/
+	int get_myID();
+
+	/**
 	* returns defenders next location to matrix pointed by Dn.
 	* @param Dn pointer to array to return to.
 	*/
 	void get_d_next_locations(MatrixXf& Dn);
+
+	/**
+	* Gets this agent's next location, after optimization is done
+	* @return my_next_location
+	*/
+	float get_my_next_location();
+
 
 	/**
 	* sets up the problem variables
@@ -151,6 +187,12 @@ public:
 	void update_LP();
 
 	/**
+	* Update glpk problem. This is the distributed version.
+	* Updates the objective vector, and constraints bounds based on X0, Xe
+	*/
+	void update_LP_dist();
+
+	/**
 	* solve LP using simplex method
 	*/
 	void solve_simplex();
@@ -161,18 +203,53 @@ public:
 	void solve_intp();
 
 	/**
-	* Extract optimal solution.
+	* Extract optimal centralized solution.
 	* extract first input, u*[0] at time t=0
 	* extracts optimal next sector from u*[0]
 	* updates d_next_locations matrix
 	*/
-	void extract_solution();
+	void extract_centralized_solution();
+
+	/**
+	* Extract optimal local/distributed solution.
+	* extract first input, u*[0] at time t=0
+	* extracts optimal next sector from u*[0]
+	* updates d_next_local_locations vector
+	*/
+	void extract_local_solution();
+
+	/**
+	* Sets sector locations of sensed neighbors.
+	* This typiclly comes from some sensing mechanism.
+	* Locations of sensed neighbors are used for collision avoidance.
+	*/
+	void set_sensed_neighbors(MatrixXf& mat);
+
+	/**
+	* Returns number of sensed neighbors.
+	* @return number of sensed neighbors.
+	*/
+	int get_N_sensed_neighbors();
+
+	/**
+	* Returns pointer to vector of sensed neighbors.
+	* @return pointer to vector of sensed neighbors.
+	*/
+	MatrixXf& get_sensed_neighbors();
+
+	/**
+	* Returns neighbors' next locations.
+	* @return vector of neighbors' next locations.
+	*/
+	MatrixXf& get_neighbor_next_locations();
 
 
 private:
 	/**
 	* Memeber variables
 	*/
+
+	int myID; /**< my agent ID \in {1,2, ..., Nd}*/
 
 	int nRows; /**< Default number of rows in grid. */
 	int nCols; /**< Default number of columns in grid. */
@@ -217,18 +294,47 @@ private:
 
 	int Nr; /**< Neighborhood radius. */
 
+	int N_sensed_neighbors; /**< number of sensed neighbors */
+	MatrixXf sensed_neighbors; /**< sectors location of sensed neighbors */
+
 	int Nd; /**< number of defenders. */
 	int Ne; /**< number of attackers. */
 
 	/**
-	* current defenders locations.
+	* This agent's current sector location
+	*/
+	float my_current_location;
+
+	/**
+	* This agent's next sector location
+	*/
+	float my_next_location;
+
+	/**
+	* current defenders locations. Centralized problem.
 	*/
 	MatrixXf d_current_locations;
-	bool d_locIsSet;
 	/**
-	* current attackers locations.
+	* current defenders locations. Distributed problem.
+	*/
+	MatrixXf d_current_local_locations;
+
+	/**
+	* Estimated Neighbors next locations, execluding this agent's location.
+	*/
+	MatrixXf neighbor_next_locations;
+
+	bool d_locIsSet;/**< flag, indicates if initial locations are set. */
+
+	/**
+	* current attackers locations. Centralized problem.
 	*/
 	MatrixXf e_current_locations;
+	/**
+	* current attackers locations. Distributed problem.
+	*/
+	MatrixXf e_current_local_locations;
+
 	bool e_locIsSet; /**< flag for enemy location setting. */
 
 	/**
@@ -236,6 +342,12 @@ private:
 	* computed after optimization is done.
 	*/
 	MatrixXf d_next_locations;
+
+	/**
+	* defenders next local locations. Distributed problem.
+	* Computed after optimization is done.
+	*/
+	MatrixXf d_next_local_locations;
 
 	float Tgame; /**< game time in [sec]. */
 	int Tp; /**< predition horizon length in [units] */
@@ -354,6 +466,15 @@ private:
 	int get_NeighborSectors(int s);
 
 	/**
+	* returns a set of neighbor secors of sector [s] \in {s_1, ..., s_n}
+	* within neighborhood length defined by L
+	* @param s sector number
+	* @param L, length of neighborhood
+	* @return count of neighbor sectors.
+	*/
+	int get_NeighborSectors(int s, int L);
+
+	/**
 	* sets input matrices B and Bout
 	*/
 	void setup_input_matrix();
@@ -410,11 +531,24 @@ private:
 
 	/**
 	* TODO
-	* Updates the collision-avoidance constraint
+	* Updates the collision-avoidance constraint, Xobs.
+	* generates a set of sectors, for 1 time step ahead,
+	* that agent should avoid in the next time step.
+	* It generates a set of 1-time-step reachable sectors of all agents that are 2 hops away.
+	* Then, it intersects this with its 1-time-step reachable sectors.
+	* the result set is execluded from next possible sectors.
+	* NOTE: THIS ACTUALLY IS EQUIVALENT TO CONSIDERING THE SENSING NEIGHBORHOOD
+	* TO BE EQUAL TO THE SET OF 2-TIME-STEP REACHABLE SECTORS,
+	* WHICH ARE DEFINED BY DYNAMICS
 	*/
 	void update_collision_constraint();
 
-
+	/**
+	* It selects agents that belong to sensing neighborhood
+	* Sensing neighborhood is assumed to be twice as large as
+	* 1-step reachable sectors (based on dynamics)
+	*/
+	void sense_neighbors();
 };
 
 #endif
