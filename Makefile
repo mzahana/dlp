@@ -10,6 +10,7 @@ BUILDDIR := build
 BIN := bin
 TEST_DLP := testDLP
 TEST_EIG := testEigen
+TEST_MATHSET := testMathSet
 
 SRCEXT := cpp
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
@@ -20,7 +21,7 @@ INC := -I include -I eigen-3.3.3
 
 # build all
 .PHONY: all
-all : msg $(TEST_DLP)  $(TEST_EIG)
+all : msg $(TEST_DLP)  $(TEST_EIG) $(TEST_MATHSET)
 msg:
 	@echo "################## Building all test files ##################"
 
@@ -46,6 +47,15 @@ $(TEST_EIG): $(BUILDDIR)/testEigen.o
 $(BUILDDIR)/testEigen.o: $(TESTDIR)/testEigen.cpp
 	@mkdir -p $(BUILDDIR)
 	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
+# testMathSet
+$(TEST_MATHSET): $(BUILDDIR)/testMathSet.o
+	@echo " Linking..."
+	@mkdir -p $(BIN)
+	@echo " $(CC) $^ -o $(BIN)/$(TEST_MATHSET)"; $(CC) $^ -o $(BIN)/$(TEST_MATHSET)
+$(BUILDDIR)/testMathSet.o: $(TESTDIR)/testMathSet.cpp
+	@mkdir -p $(BUILDDIR)
+	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
+
 
 .PHONY: clean
 clean:
