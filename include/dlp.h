@@ -1,6 +1,15 @@
 /**
-* Distributed LP class header.
-*/
+ * @brief Distributed LP class header
+ * @file dlp.h
+ * @author Mohamed Abdelkader <mohamedashraf123@gmail.com>
+ */
+/*
+ * Copyright 2017 Mohamed Abdelkader.
+ *
+ * This file is part of the DLP package and subject to the license terms
+ * in the LICENSE file of the DLP repository.
+ * https://github.com/mzahana/DLP.git
+ */
 
 #ifndef DLP_H
 #define DLP_H
@@ -171,6 +180,18 @@ public:
 	*/
 	float get_my_next_location();
 
+	/**
+	* Set grid resolution, in ENU.
+	* @param dx width of sector along X axis, in [meter].
+	* @param dy width of sector along Y axis, in [meter].
+	*/
+	void set_grid_resolution(float dx, float dy);
+
+	/**
+	* Set origin shifts from (0,0).
+	*/
+	void set_origin_shifts(float x, float y);
+
 
 	/**
 	* sets up the problem variables
@@ -243,6 +264,24 @@ public:
 	*/
 	MatrixXf& get_neighbor_next_locations();
 
+	/**
+	* Converts from sector number to ENU coordinates.
+	* East (x), North (y), Up (z).
+	* It uses origin_shifts, and sectors resolution defined by dcosl_x, drows_y.
+	* @param s sector number
+	* @return poitner to Matrix of xyz in ENU.
+	*/
+	MatrixXf& get_ENU_from_sector(int s);
+
+	/**
+	* Converts an ENU coordinates to sector number.
+	* East (x), North (y), Up (z).
+	* It uses origin_shifts, and sectors resolution defined by dcosl_x, drows_y.
+	* @param mat poitner to Matrix of xyz in ENU.
+	* @return sector number
+	*/
+	int get_sector_from_ENU(MatrixXf& mat);
+
 
 private:
 	/**
@@ -265,12 +304,13 @@ private:
 	*/
 	MatrixXi S;
 
-	int dcols; /**< grid resolution in [m]. */
-	int drows; /**< grid resolution in [m]. */
+	int dcols_x; /**< grid resolution, in East(x), in [m]. */
+	int drows_y; /**< grid resolution, in North(y), in [m]. */
 
 	/**
 	* Origin shifts in [m].
 	* Assumes 2D grid.
+	* The first element is along East(x) axis, second is along North (y).
 	*/
 	MatrixXf origin_shifts;
 
@@ -441,6 +481,11 @@ private:
 	* See GLPK Docs for more information.
 	*/
 	int SOL_STATUS;
+
+	/**
+	* Matrix to store ENU coordinates.
+	*/
+	MatrixXf enu_coord;
 
 	/**
 	* Memeber functions.

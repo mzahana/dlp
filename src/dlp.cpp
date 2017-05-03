@@ -1,10 +1,10 @@
+
+
 #include "dlp.h"
 
 /**
 * TODO
-*	- implement obstacle avoidance (equality constraints) [NOT NEEDED?]
 *	- implement utility function to convert sector location to ENU and vice versa.
-* 	- implement sense_neighborhood()
 */
 
 /**
@@ -22,8 +22,8 @@ DLP::DLP()
 	ns = nRows*nCols;
 	nu = ns*ns;
 
-	dcols = 1;
-	drows = 1;
+	dcols_x = 1;
+	drows_y = 1;
 	origin_shifts = MatrixXf::Constant(2,1,-1.0);
 
 	nBase =1;
@@ -1172,5 +1172,86 @@ DLP::extract_local_solution(){
 			neighbor_next_locations(i,0)=d_next_local_locations(i+1,0);
 		}
 	}
+	return;
+}
+
+/**
+* Converts from sector number to ENU coordinates.
+* East (x), North (y), Up (z).
+* It uses origin_shifts, and sectors resolution defined by dcosl_x, drows_y.
+* @param s, sector number
+* @return poitner to Matrix of xyz in ENU.
+*/
+MatrixXf&
+DLP::get_ENU_from_sector(int s){
+	float r_y, c_x; // row & column of sector in grid
+	float shift_x, shift_y; // origin shifts
+	enu_coord = MatrixXf::Constant(3,1,0.0);
+
+	shift_x = origin_shifts(0,0);
+	shift_y = origin_shifts(1,0);
+
+	// get sector locatoin
+	// stored in sector_location
+	DLP::get_sector_location(s);
+	r_y = sector_location(0,0);
+	c_x = sector_location(1,0);
+
+	enu_coord(0,0) = (c_x - 0.5)*dcols_x-shift_x;// X coordinate
+	enu_coord(1,0) = (nRows-r_y + 0.5)*drows_y-shift_y;// Y coordinate
+	enu_coord(2,0) = 0.0;// Z coordinate
+
+	return enu_coord;
+}
+
+/**
+* Converts an ENU coordinates to sector number.
+* East (x), North (y), Up (z).
+* It uses origin_shifts, and sectors resolution defined by dcosl_x, drows_y.
+* @param mat, poitner to Matrix of xyz in ENU.
+* @return sector number
+*/
+int
+DLP::get_sector_from_ENU(MatrixXf& mat){
+	float x, y;
+	float shift_x, shift_y;
+	float row, col;
+
+	shift_x = origin_shifts(0,0);
+	shift_y = origin_shifts(1,0);
+
+	x = mat(0,0)+shift_x;
+	y = mat(1,0)+shift_y;
+
+	//get column/row numbers
+	row = ceil(nRows-(y/drows_y));
+	col = ceil(x/dcols_x);
+
+	if (row < 1){
+		row=1;
+	}
+	return ( (row*nCols) - (nCols-col) );
+}
+
+
+/**
+* Set grid resolution, in ENU.
+* @param dx width of sector along X axis, in [meter].
+* @param dy width of sector along Y axis, in [meter].
+*/
+void
+DLP::set_grid_resolution(float dx, float dy){
+	dcols_x = dx;
+	drows_y = dy;
+	return;
+}
+
+/**
+* Set origin shifts from (0,0).
+*/
+void
+DLP::set_origin_shifts(float x, float y){
+	origin_shifts(0,0) = x;
+	origin_shifts(1,0) = y;
 	return;
 }

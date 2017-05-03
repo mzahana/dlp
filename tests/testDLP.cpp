@@ -1,3 +1,16 @@
+/**
+ * @brief test file of Distributed LP class.
+ * @file testDLP.cpp
+ * @author Mohamed Abdelkader <mohamedashraf123@gmail.com>
+ */
+/*
+ * Copyright 2017 Mohamed Abdelkader.
+ *
+ * This file is part of the DLP package and subject to the license terms
+ * in the LICENSE file of the DLP repository.
+ * https://github.com/mzahana/DLP.git
+ */
+
 #include "dlp.h"
 
 int main(){
@@ -23,6 +36,16 @@ int main(){
 
 	MatrixXf next_loc; /* next optimal locations */
 
+	MatrixXf enu(3,1);
+	int sector_from_enu;
+
+	float dx = 1.0; //meter
+	float dy = 1.0; //meter
+
+	float shift_x = 3.5;
+	float shift_y = 3.5;
+
+
 	clock_t start, end;
 
 	m(0,0)=2.0; m(1,0)=8.0; m(2,0)=9.0;
@@ -31,7 +54,12 @@ int main(){
 	problem.set_nRows(cols);
 	problem.set_Tp(Tp);
 
-	dloc(0,0)=4.0; dloc(1,0)=7.0; dloc(2,0)=9.0;
+	// grid resolution
+	problem.set_grid_resolution(dx, dy);
+	// origin shift
+	problem.set_origin_shifts(shift_x, shift_y);
+
+	dloc(0,0)=21.0; dloc(1,0)=7.0; dloc(2,0)=9.0;
 
 	eloc(0,0)=15.0;eloc(1,0)=16.0;eloc(2,0)=17.0;
 
@@ -52,6 +80,11 @@ int main(){
 	problem.set_d_current_locations(dloc);
 	problem.set_my_current_location(dloc(myID,0));
 	problem.set_e_current_locations(eloc);
+
+	// test conversion from sector to ENU and vise versa
+	enu = problem.get_ENU_from_sector(dloc(myID,0));
+	sector_from_enu = problem.get_sector_from_ENU(enu);
+
 	//problem.update_LP();
 	problem.update_LP_dist();
 	problem.solve_simplex();// faster than interior point
@@ -72,6 +105,9 @@ int main(){
 		cout << "Number of sensed neighbors = "<< problem.get_N_sensed_neighbors() << "\n";
 		cout << "Sensed Neighbors: " << sensedN.transpose() << "\n";
 		cout << "Next neighbor(s) location(s): " << neighbors_next_loc.transpose() << "\n";
+
+		cout << "xyz from sector "<< dloc(myID,0) << " = " << enu.transpose() << "\n";
+		cout << "sector from " << enu.transpose() << " = " << sector_from_enu << "\n";
 	}
 
 	return 0;
