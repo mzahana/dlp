@@ -53,6 +53,12 @@ DLP::DLP()
 
 	my_current_location = d_current_locations(myID,0);
 	my_next_location = my_current_location;
+
+	// set default glpk params
+	glp_init_smcp(&simplex_param);
+	glp_init_iptcp(&ip_param);
+	simplex_param.msg_lev = GLP_MSG_ERR;
+	ip_param.msg_lev = GLP_MSG_ERR;
 }
 /**
 * Destructor
@@ -736,10 +742,10 @@ DLP::setup_glpk_problem(){
 	lp = glp_create_prob();
 	glp_set_obj_dir(lp, GLP_MIN);
 	//calculate total number of constraints
-	int nEq = ns*Tp; /* number of Eq constraints */
+	int nEq = ns*Tp; /* number of Eq constraints. */
 	int nIneq = ns*Tp; /* number of Ineq constraints */
 	int nConst = 2*ns*Tp + 2*(ns+nu)*Tp;
-	glp_add_rows(lp, nEq+nIneq);
+	glp_add_rows(lp, nEq+nIneq+1);//+1 for collision consttraint
 	glp_add_cols(lp, (ns+nu)*Tp);
 
 	/* NOTE: glpk indexing starts from 1 */
@@ -748,11 +754,16 @@ DLP::setup_glpk_problem(){
 	for (int i=0; i<nEq; i++){
 		glp_set_row_bnds(lp, i+1, GLP_FX, X0(i,0), X0(i,0));
 	}
+
 	// set inequality/flow constraints
 	for (int i=0; i<nIneq; i++){
 		int j = i+nEq; /* add after equalities */
 		glp_set_row_bnds(lp, j+1, GLP_UP, 0.0, X0(i,0));
 	}
+
+	// set equality/collision constraint
+	glp_set_row_bnds(lp, nEq+nIneq+1, GLP_FX, 0.0, 0.0);
+
 	// set box constraints and objective vector
 	for (int i=0; i<(ns+nu)*Tp; i++){
 		glp_set_col_bnds(lp, i+1, GLP_DB, 0.0, 1.0);
@@ -764,7 +775,7 @@ DLP::setup_glpk_problem(){
 	* in this implementation, it contains dynamics and flow constraints only.
 	*/
 	// number of nonzero values
-	int nnzEq = Ad_s.nonZeros();
+	int nnzEq = Ad_s.nonZeros() + x_obs_s.nonZeros();
 	int nnzIneq = Af_s.nonZeros();
 
 	int ia[1+nnzEq+nnzIneq], ja[1+nnzEq+nnzIneq];
@@ -789,25 +800,109 @@ DLP::setup_glpk_problem(){
 		}
 	}
 
+	// fill colliion constraint
+	if (x_obs_s.nonZeros()>0){
+		for (int k=0; k<x_obs_s.outerSize(); ++k){
+			for (SparseMatrix<float>::InnerIterator it2(x_obs_s,k); it2; ++it2)
+			{
+				ia[ct+1] =2*ns*Tp+1; ja[ct+1] =it2.row()+1; ar[ct+1] =1.0;
+				ct++;
+			}
+		}
+	}
+
+
+	/*
+	for (int i=0; i<collision_set.size(); i++){
+		ia[nnzEq+nnzIneq-i] = 2*ns*Tp+1;
+		ja[nnzEq+nnzIneq-i] = collision_set(i,0);
+		ar[nnzEq+nnzIneq-i] = 1.0;
+	}
+	*/
+
+
 	// check if matrix is correct
 	//int chk= glp_check_dup(nEq+nIneq, (ns+nu)*Tp, nnzEq+nnzIneq, ia, ja);
 	glp_load_matrix(lp, nnzEq+nnzIneq, ia, ja, ar);
+	if ( !(x_obs_s.nonZeros()>0)){
+		int r[1] = {nEq+nIneq+1};
+		glp_del_rows(lp, 1, r);
+	}
 }
 
 /**
 * TODO
 * Updates the collision-avoidance constraint, Xobs.
-* generates a set of sectors, for 1 time step ahead,
-* that agent should avoid in the next time step.
 * It generates a set of 1-time-step reachable sectors of all agents that are 2 hops away.
 * Then, it intersects this with its 1-time-step reachable sectors.
 * the result set is execluded from next possible sectors.
-* NOTE: THIS ACTUALLY IS EQUIVALENT TO CONSIDERING THE SENSING NEIGHBORHOOD
-* TO BE EQUAL TO THE SET OF 2-TIME-STEP REACHABLE SECTORS,
-* WHICH ARE DEFINED BY DYNAMICS
 */
 void
-DLP::update_collision_constraint(){}
+DLP::update_collision_constraint(){
+	// init vectors
+	x_obs = MatrixXf::Constant(ns,1,0.0);
+	//X_obs = MatrixXf::Constant(ns*Tp,1,0.0);
+	/*
+	* NOTEL update of X_obs (over Tp) is not required.
+	* Only interested in 1-step ahead collision free!
+	*/
+
+
+	// get my neighbor sectors set
+	int N1 =DLP::get_NeighborSectors(my_current_location,Nr);
+	//fill my set
+	float my_set[N1]; // neighborhood sets
+	for (int i=0; i<N1; i++){
+		my_set[i] = neighbor_sectors(i,0);
+	}
+
+	//my_set = neighbor_sectors.data();// fill C array
+	sort(my_set,my_set+N1);// needed before intersection
+
+	// sense neighbors
+	DLP::sense_neighbors();
+
+	// loop over sensed neighbors
+	// for each neighbor, generate its set
+	// intersect with mine. Execlude the intersection set from my future location
+	for (int i=0; i<N_sensed_neighbors; i++){
+		vector<int> intersection_set(ns);
+		std::vector<int>::iterator it;
+
+		// get 1-step reachable set of neighbor, stored in neighbor_sectors
+		int N2 =DLP::get_NeighborSectors(sensed_neighbors(i,0),Nr);
+		float neighbor_set[N2+1];
+
+		// fill neighbor set
+
+		for (int j=0; j<N2; j++){
+			neighbor_set[j] = neighbor_sectors(j,0);
+		}
+		neighbor_set[N2]=sensed_neighbors(i,0);
+
+		//neighbor_set = neighbor_sectors.data();// fill C array
+
+		sort(neighbor_set,neighbor_set+N2+1);// needed before intersection
+
+		// perform set intersection
+		//collision_set.clear();
+		it=std::set_intersection (my_set, my_set+N1, neighbor_set, neighbor_set+N2+1, intersection_set.begin());
+		intersection_set.resize(it-intersection_set.begin());
+		collision_set = MatrixXf::Constant(intersection_set.size(),1,0.0);
+
+		//fil x_obs
+		if (intersection_set.size() >0){
+			for (int s=0; s<intersection_set.size(); s++){
+				int loc = intersection_set[s]-1;
+				x_obs(loc,0)=1.0;
+				collision_set(s,0) = intersection_set[s];
+			}
+		}
+		x_obs_s = x_obs.sparseView();
+	}
+
+	return;
+}
 
 /**
 * Simulates neighbors sensing.
@@ -819,18 +914,26 @@ void
 DLP::sense_neighbors(){
 
 	// get my neighbors
-	int L =2; /* radius of sensing; 2 hops */
+	int L =2*Nr; /* radius of sensing; 2 hops */
 	int N =DLP::get_NeighborSectors(my_current_location,L);
-	float N_set[N]; /* C array of set of neighbors, myself included*/
+	float *N_set; /* C array of set of neighbors, myself included*/
+	/*
 	for (int i=0; i< N ; i++){
 		N_set[i] = neighbor_sectors(i,0);
 	}
+	*/
+	N_set = neighbor_sectors.data();
+
 	// get other agents sectors
-	float others_set[Nd];
+	float *others_set;
 	int k=0;
+	/*
 	for (int i=0; i< Nd; i++){
 		others_set[i]=d_current_locations(i,0);
 	}
+	*/
+	others_set = d_current_locations.data();
+
 	vector<int> intersection_set(Nd);// vector stores intersection set
 	std::vector<int>::iterator it;
 	sort(N_set,N_set+N);
@@ -909,17 +1012,19 @@ DLP::update_LP_dist(){
 	start = clock();
 	DLP::update_X0_dist();
 	DLP::update_Xe();
-	DLP::setup_optimization_vector();
+	DLP::setup_optimization_vector();// C vector
+	DLP::update_collision_constraint();
 
 	/* NOTE: glpk indexing starts from 1 */
-
+	DLP::setup_glpk_problem();
+/*
 	// set equality/dynamics constraints
 	for (int i=0; i<nEq; i++){
 		glp_set_row_bnds(lp, i+1, GLP_FX, X0(i,0), X0(i,0));
 	}
 	// set inequality/flow constraints
 	for (int i=0; i<nIneq; i++){
-		int j = i+nEq; /* add after equalities */
+		int j = i+nEq; // add after equalities
 		glp_set_row_bnds(lp, j+1, GLP_UP, X0(i,0), X0(i,0));
 	}
 
@@ -927,6 +1032,8 @@ DLP::update_LP_dist(){
 	for (int i=0; i<(ns+nu)*Tp; i++){
 		glp_set_obj_coef(lp, i+1, C(i,0));
 	}
+	*/
+
 	end = clock();
 	if (DEBUG)
 		cout << "Problem updated in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
@@ -953,7 +1060,7 @@ DLP::setup_problem(){
 	DLP::set_Xref();
 	DLP::setup_dynamics_constraints();
 	DLP::setup_flow_constraints();
-
+	DLP::update_collision_constraint();
 	//DLP::setup_boundary_constraints();
 
 	DLP::setup_enemy_feedback_matrix();
@@ -979,7 +1086,7 @@ DLP::solve_simplex(){
 	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
 	clock_t start, end;
     start  = clock();
-	SOL_STATUS = glp_simplex(lp, NULL);
+	SOL_STATUS = glp_simplex(lp, &simplex_param);
 	if (SOL_STATUS != 0){
 		cout << "There is a problem in solution." << endl;
 	}
@@ -1001,7 +1108,7 @@ DLP::solve_intp(){
 	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
 	clock_t start, end;
     start  = clock();
-	SOL_STATUS = glp_interior(lp, NULL);
+	SOL_STATUS = glp_interior(lp, &ip_param);
 	if (SOL_STATUS != 0){
 		cout << "There is a problem in solution." << endl;
 	}

@@ -467,6 +467,24 @@ private:
 	bool cIsSet;
 
 	/**
+	* Obstacles/collision constraint vector over 1-time step.
+	*/
+	MatrixXf x_obs;
+
+	SparseMatrix<float> x_obs_s; /**< sparse x_obs */
+
+	/**
+	* Collsiion sectors
+	*/
+	MatrixXf collision_set;
+
+
+	/**
+	* Obstacles/collision constraint vector over Tp.
+	*/
+	MatrixXf X_obs;
+
+	/**
 	* first optimal input u*[0]
 	*/
 	MatrixXf u0_opt;
@@ -475,6 +493,16 @@ private:
 	* glpk problem pointer
 	*/
 	glp_prob *lp;
+
+	/**
+	* glpk Simplex param object
+	*/
+	glp_smcp simplex_param;
+
+	/**
+	* glpk interior Point param object
+	*/
+	glp_iptcp ip_param;
 
 	/**
 	* Solution status.
@@ -577,14 +605,9 @@ private:
 	/**
 	* TODO
 	* Updates the collision-avoidance constraint, Xobs.
-	* generates a set of sectors, for 1 time step ahead,
-	* that agent should avoid in the next time step.
 	* It generates a set of 1-time-step reachable sectors of all agents that are 2 hops away.
-	* Then, it intersects this with its 1-time-step reachable sectors.
+	* Then, it intersects this with my 1-time-step reachable sectors.
 	* the result set is execluded from next possible sectors.
-	* NOTE: THIS ACTUALLY IS EQUIVALENT TO CONSIDERING THE SENSING NEIGHBORHOOD
-	* TO BE EQUAL TO THE SET OF 2-TIME-STEP REACHABLE SECTORS,
-	* WHICH ARE DEFINED BY DYNAMICS
 	*/
 	void update_collision_constraint();
 
