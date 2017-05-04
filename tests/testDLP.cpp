@@ -16,11 +16,11 @@
 int main(){
 	DLP problem;
 	problem.DEBUG = true;
-	int myID =0;// 0 is 1st agent
+	int myID =2;// 0 is 1st agent
 	problem.set_myID(myID);
-	int Nd=3; int Ne = 3;
+	int Nd=3; int Ne = 2;
 	int rows=7; int cols=7;
-	int Tp=3;
+	int Tp=2;
 
 	int nBaseref=3;
 	int nB=1;
@@ -42,8 +42,8 @@ int main(){
 	float dx = 1.0; //meter
 	float dy = 1.0; //meter
 
-	float shift_x = 3.5;
-	float shift_y = 3.5;
+	float shift_x = 2.5;
+	float shift_y = 2.5;
 
 
 	clock_t start, end;
@@ -53,15 +53,17 @@ int main(){
 	problem.set_nCols(rows);
 	problem.set_nRows(cols);
 	problem.set_Tp(Tp);
+	problem.set_Nd(Nd);
+	problem.set_Ne(Ne);
 
 	// grid resolution
 	problem.set_grid_resolution(dx, dy);
 	// origin shift
 	problem.set_origin_shifts(shift_x, shift_y);
 
-	dloc(0,0)=21.0; dloc(1,0)=7.0; dloc(2,0)=9.0;
+	dloc(0,0)=15.0; dloc(1,0)=17.0; dloc(2,0)=19.0;
 
-	eloc(0,0)=15.0;eloc(1,0)=16.0;eloc(2,0)=17.0;
+	eloc(0,0)=28.0;eloc(1,0)=26.0;
 
 
 	problem.set_BaseRef(nBaseref, m);
@@ -76,10 +78,15 @@ int main(){
 
 
 	start = clock();
+
+
 	// each run typically requires the following 4 lines
+
+	problem.set_myID(myID);
 	problem.set_d_current_locations(dloc);
 	problem.set_my_current_location(dloc(myID,0));
 	problem.set_e_current_locations(eloc);
+	//problem.setup_problem();
 
 	// test conversion from sector to ENU and vise versa
 	enu = problem.get_ENU_from_sector(dloc(myID,0));
@@ -94,6 +101,7 @@ int main(){
 	//problem.get_d_next_locations(next_loc);
 	neighbors_next_loc = problem.get_neighbor_next_locations();
 	sensedN = problem.get_sensed_neighbors();
+
 	end = clock();
 	if (problem.DEBUG){
 		cout << "Problem solved in Total time= " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
