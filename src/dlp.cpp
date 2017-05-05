@@ -1,4 +1,15 @@
-
+/**
+ * @brief Distributed LP class header
+ * @file dlp.h
+ * @author Mohamed Abdelkader <mohamedashraf123@gmail.com>
+ */
+/*
+ * Copyright 2017 Mohamed Abdelkader.
+ *
+ * This file is part of the DLP package and subject to the license terms
+ * in the LICENSE file of the DLP repository.
+ * https://github.com/mzahana/DLP.git
+ */
 
 #include "dlp.h"
 
