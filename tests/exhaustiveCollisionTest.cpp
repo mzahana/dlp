@@ -15,7 +15,7 @@
 
 int main(){
 	DLP problem;
-	problem.DEBUG = true;
+	problem.DEBUG = false;
 	int myID =0;// 0 is 1st agent
 	problem.set_myID(myID);
 	int Nd=3; int Ne = 2;
@@ -76,6 +76,7 @@ int main(){
 	problem.set_d_current_locations(dloc);
 	problem.set_e_current_locations(eloc);
 	problem.set_my_current_location(dloc(myID,0));
+	cout << "start setup... \n";
 	problem.setup_problem();
 
 
@@ -113,9 +114,11 @@ int main(){
 									problem.extract_local_solution();
 									d_next_loc(a,0)=problem.get_my_next_location() ;
 								}
+								/*
 								cout << "enemy locations: " << eloc.transpose()<< "\n";
 								cout << "Cureent locations: "<<dloc.transpose() << "\n";
 								cout << "Distributed solution: "<<d_next_loc.transpose() << "\n";
+								*/
 
 								// check for a conflict
 								if (d_next_loc(0,0) == d_next_loc(1,0) || d_next_loc(2,0) == d_next_loc(1,0) || d_next_loc(0,0) == d_next_loc(2,0)){
