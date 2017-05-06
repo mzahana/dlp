@@ -1,0 +1,5 @@
+std_msgs/Header header
+int32 defenders_count
+int32[] defenders_sectors
+# location in ENU
+float32[] defenders_position

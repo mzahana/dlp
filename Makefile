@@ -18,7 +18,7 @@ SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 CFLAGS := -g # -Wall
 LIB := -lm -lglpk
-INC := -I include -I eigen-3.3.3
+INC := -I include/* -I eigen-3.3.3
 
 # build all
 .PHONY: all

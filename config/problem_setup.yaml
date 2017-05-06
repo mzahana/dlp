@@ -1,0 +1,26 @@
+# Setup problem/game parameters before running the dlp_node
+# unique agent ID, starts from 0
+myID: 0
+# [rows, columns]
+grid_size: [7,7]
+# sector size (x,y) in ENU, in meter(s)
+sector_size: [0.3, 0.3]
+# origin shifts (dx,dy) from (0,0) in ENU, in meter(s)
+origin_shifts: [2.5, 2.5]
+N_defenders: 3
+N_attackers: 2
+# count of base sectors
+nBase: 1
+# set of base sectors 
+Base: [1]
+# count of base reference sectors
+nBaseRef: 3
+# set of base referense sectors
+BaseRef: [2,8,9]
+# prediction horizon
+Tp: 2
+neighbor_radius: 1
+#d_start_locations
+update_freq: 50
+# fixed altitude setpoint
+altitude_setpoint: 1.0
