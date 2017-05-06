@@ -65,6 +65,8 @@ DLP::DLP()
 	my_current_location = d_current_locations(myID,0);
 	my_next_location = my_current_location;
 
+	// create GLPK problem
+	lp = glp_create_prob();
 	// set default glpk params
 	glp_init_smcp(&simplex_param);
 	glp_init_iptcp(&ip_param);
@@ -750,7 +752,12 @@ DLP::setup_optimization_vector(){
 */
 void
 DLP::setup_glpk_problem(){
-	lp = glp_create_prob();
+	/*
+	* **NOTE**: creating the problem object in each run BLOWS up the memory!!
+	* Use glp_erase_prob(lp) instead
+	*/
+	//lp = glp_create_prob();/
+	glp_erase_prob(lp);
 	glp_set_obj_dir(lp, GLP_MIN);
 	//calculate total number of constraints
 	int nEq = ns*Tp; /* number of Eq constraints. */
@@ -1347,6 +1354,9 @@ DLP::get_sector_from_ENU(MatrixXf& mat){
 
 	if (row < 1){
 		row=1;
+	}
+	if (col < 1){
+		col=1;
 	}
 	return ( (row*nCols) - (nCols-col) );
 }
