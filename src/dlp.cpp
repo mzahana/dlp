@@ -756,7 +756,7 @@ DLP::setup_glpk_problem(){
 	* **NOTE**: creating the problem object in each run BLOWS up the memory!!
 	* Use glp_erase_prob(lp) instead
 	*/
-	//lp = glp_create_prob();/
+	//lp = glp_create_prob();
 	glp_erase_prob(lp);
 	glp_set_obj_dir(lp, GLP_MIN);
 	//calculate total number of constraints
@@ -843,7 +843,7 @@ DLP::setup_glpk_problem(){
 	//int chk= glp_check_dup(nEq+nIneq, (ns+nu)*Tp, nnzEq+nnzIneq, ia, ja);
 	glp_load_matrix(lp, nnzEq+nnzIneq, ia, ja, ar);
 	if ( !(x_obs_s.nonZeros()>0)){
-		int r[1] = {nEq+nIneq+1};
+		int r[1+1]; r[1] = nEq+nIneq+1;
 		glp_del_rows(lp, 1, r);
 	}
 }
@@ -916,8 +916,9 @@ DLP::update_collision_constraint(){
 				collision_set(s,0) = intersection_set[s];
 			}
 		}
-		x_obs_s = x_obs.sparseView();
+		
 	}
+	x_obs_s = x_obs.sparseView();
 
 	return;
 }
