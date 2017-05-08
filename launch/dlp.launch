@@ -1,8 +1,8 @@
 <launch>
 	<!--group ns="Quad1"-->
-		<rosparam command="load" file="$(find DLP)/config/problem_setup.yaml" />
+		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
 
-		<node pkg="DLP" type="dlp_node" name="dlp_node"  required="true" output="screen">
+		<node pkg="dlp" type="dlp_node" name="dlp_node"  required="true" output="screen">
         	</node>
 	<!--/group-->
 </launch>

@@ -4,7 +4,7 @@ import rospy
 from numpy import array
 from std_msgs.msg import *
 from geometry_msgs.msg import *
-from DLP.msg import DefendersState, EnemyState
+from dlp.msg import DefendersState, EnemyState
 
 def main():
 

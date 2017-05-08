@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(DLP)
+project(dlp)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -201,7 +201,6 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-
 add_executable(dlp_node src/dlp_node.cpp src/dlp.cpp)
 target_link_libraries(dlp_node ${catkin_LIBRARIES} glpk)
-#add_dependencies(talker beginner_tutorials_generate_messages_cpp)
+add_dependencies(dlp_node dlp_generate_messages_cpp)
