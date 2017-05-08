@@ -13,7 +13,7 @@ def main():
 	# Publishers
 	d_pub = rospy.Publisher('defenders_locations', DefendersState, queue_size=10)
 	e_pub = rospy.Publisher('enemy_locations', EnemyState, queue_size=10)
-	local_pub = rospy.Publisher('pose', PoseArray, queue_size=10)
+	local_pub = rospy.Publisher('mavros/local_position/pose', PoseStamped, queue_size=10)
 
 	# TODO: Subscribers: to optitrack topics
 
@@ -56,11 +56,11 @@ def main():
 	e_msg.is_captured = [False, False]
 
 	local_msg.header.stamp = rospy.Time.now()
-	point = Point32(0.5,3.5,1.0)
-	#orientation = Quaternion(0.,0.,0.,1.)
-	#local_msg.pose.position = point
-	#local_msg.pose.orientation = orientation
-	local_msg = point
+	point = Point(0.5,3.5,1.0)
+	orientation = Quaternion(0.,0.,0.,1.)
+	local_msg.pose.position = point
+	local_msg.pose.orientation = orientation
+	#local_msg = point
 
 	# loop rate
 	rate = rospy.Rate(50)
@@ -70,7 +70,7 @@ def main():
 
 		d_msg.header.stamp = rospy.Time.now()
 		e_msg.header.stamp = rospy.Time.now()
-		#local_msg.header.stamp = rospy.Time.now()
+		local_msg.header.stamp = rospy.Time.now()
 
 		d_pub.publish(d_msg)
 		e_pub.publish(e_msg)
