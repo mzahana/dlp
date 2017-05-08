@@ -3,7 +3,7 @@
 import rospy
 from numpy import array
 from std_msgs.msg import *
-from geometry_msgs.msg import *
+from geometry_msgs.msg import Point, Point32, PoseStamped, Quaternion
 from dlp.msg import DefendersState, EnemyState
 
 def main():
@@ -56,8 +56,8 @@ def main():
 	e_msg.is_captured = [False, False]
 
 	local_msg.header.stamp = rospy.Time.now()
-	point = Point(0.5,3.5,1.0)
-	orientation = Quaternion(0.,0.,0.,1.)
+	point = Point(6.5,5.5,1.0)
+	orientation = Quaternion(0.0,0.0,0.0,1.0)
 	local_msg.pose.position = point
 	local_msg.pose.orientation = orientation
 	#local_msg = point
