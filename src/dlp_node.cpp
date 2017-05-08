@@ -34,12 +34,13 @@
 class CallBacks
 {
 public:
-	 CallBacks() { }
-	~CallBacks() { }
-
 	dlp::DefendersState	d_loc_msg;
 	dlp::EnemyState		e_loc_msg;
 	geometry_msgs::PoseStamped local_enu_msg;
+
+	 CallBacks() { }
+	 //v_pos.push_back(0);v_pos.push_back(0);v_pos.push_back(0);}
+	~CallBacks() { }
 
 	// Defenders locations callback
 	void d_loc_cb(const dlp::DefendersState::ConstPtr& msg)
@@ -61,13 +62,22 @@ public:
 	}
 
 	// my local ENU position, from mavros.
+
 	void local_enu_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
+
 		local_enu_msg.header		= msg->header;
 		local_enu_msg.pose.position	= msg->pose.position;
-		local_enu_msg.pose.orientation	= msg->pose.orientation;
+		cout << "cb3 \n";
+		cout << "local_pos: " << local_enu_msg.pose.position.x << " "
+								<< local_enu_msg.pose.position.y << " "
+								<< local_enu_msg.pose.position.z << "\n";
+
+		double v_x = msg->pose.position.x;
+		double v_y = msg->pose.position.y;
+		double v_z = msg->pose.position.z;
 	}
 
-	
+
 };
 
 int main(int argc, char **argv)
@@ -128,13 +138,13 @@ int main(int argc, char **argv)
 	std::vector<float> sector_size, default_sector_size;
 	default_sector_size.push_back(1.0); default_sector_size.push_back(1.0);
 	nh.param< vector<float> >("sector_size", sector_size, default_sector_size);
-	
+
 	float altitude_setpoint;
 	nh.param<float>("altitude_setpoint", altitude_setpoint, 1.0);
-	
+
 	float update_freq;
 	nh.param<float>("update_freq", update_freq, 50.0);
-	
+
 	/**
 	* The advertise() function is how you tell ROS that you want to
 	* publish on a given topic name.
@@ -253,6 +263,7 @@ int main(int argc, char **argv)
 
 		start = clock();
 
+
 		// get defenders locations
 		dloc = MatrixXf::Constant(Nd,1,0.0);
 		for (int i=0; i< cb.d_loc_msg.defenders_count; i++){
@@ -263,6 +274,7 @@ int main(int argc, char **argv)
 		}
 		problem.set_d_current_locations(dloc);
 
+
 		// get enemy locations
 		eloc = MatrixXf::Constant(Ne,1,0.0);
 		for (int i=0; i< cb.e_loc_msg.enemy_count; i++){
@@ -272,6 +284,7 @@ int main(int argc, char **argv)
 			eloc(i,0) =problem.get_sector_from_ENU(enu);
 		}
 		problem.set_e_current_locations(eloc);
+
 
 		// set my current location
 		enu(0,0)= cb.local_enu_msg.pose.position.x;
@@ -285,13 +298,18 @@ int main(int argc, char **argv)
 
 		//problem.update_LP();
 		problem.update_LP_dist();
+
 		problem.solve_simplex();// faster than interior point
+
 		//problem.solve_intp();
 		//problem.extract_centralized_solution();
 		problem.extract_local_solution();
+
 		//problem.get_d_next_locations(next_loc);
 		neighbors_next_loc = problem.get_neighbor_next_locations();
+
 		sensedN = problem.get_sensed_neighbors();
+
 
 		end = clock();
 
@@ -301,16 +319,21 @@ int main(int argc, char **argv)
 		my_state.my_id = myID;
 		my_state.my_current_sector = problem.get_my_current_location();
 		my_state.my_next_sector = problem.get_my_next_location();
+
 		my_state.my_current_position.x = (float)cb.local_enu_msg.pose.position.x;
 		my_state.my_current_position.y = (float)cb.local_enu_msg.pose.position.y;
 		my_state.my_current_position.z = (float)cb.local_enu_msg.pose.position.z;
+
 		enu = problem.get_ENU_from_sector(problem.get_my_next_location());
+
 		my_state.my_next_position.x = enu(0,0);
 		my_state.my_next_position.y = enu(1,0);
 		my_state.my_next_position.x = altitude_setpoint;
+		my_state.sensed_neighbors.resize(problem.get_N_sensed_neighbors());
 		for (int i=0; i< problem.get_N_sensed_neighbors(); i++){
 			my_state.sensed_neighbors[i] = sensedN(i,0);
 		}
+
 		my_state.execution_time = (float)( (end-start)/( (clock_t)1000000) );
 
 		// publish my_state msg
@@ -330,7 +353,7 @@ int main(int argc, char **argv)
 			cout << "###################################################### \n" ;
 		}
 
-
+		
 		ros::spinOnce();
 
 		loop_rate.sleep();
