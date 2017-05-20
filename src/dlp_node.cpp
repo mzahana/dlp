@@ -160,8 +160,8 @@ int main(int argc, char **argv)
 	* Subscribers
 	*/
 	CallBacks cb;
-	ros::Subscriber d_loc_sub = nh.subscribe("defenders_locations", 10, &CallBacks::d_loc_cb, &cb);
-	ros::Subscriber e_loc_sub = nh.subscribe("enemy_locations", 10, &CallBacks::e_loc_cb, &cb);
+	ros::Subscriber d_loc_sub = nh.subscribe("/defenders_locations", 10, &CallBacks::d_loc_cb, &cb);
+	ros::Subscriber e_loc_sub = nh.subscribe("/enemy_locations", 10, &CallBacks::e_loc_cb, &cb);
 	ros::Subscriber local_enu_sub = nh.subscribe("mavros/local_position/pose", 10, &CallBacks::local_enu_cb, &cb);
 
 	ros::Rate loop_rate(update_freq);
