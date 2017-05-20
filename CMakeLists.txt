@@ -55,6 +55,7 @@ add_message_files(
   DlpState.msg
   EnemyState.msg
   DefendersState.msg
+  MasterCommand.msg
 #   Message1.msg
 #   Message2.msg
  )
