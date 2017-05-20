@@ -4,5 +4,7 @@
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node"  required="true" output="screen">
         	</node>
+		<node pkg="dlp" type="defender_node.py" name="defender_node"  required="true" output="screen">
+        	</node>
 	</group>
 </launch>

@@ -103,6 +103,8 @@ int main(int argc, char **argv)
 	* Retrieve game paramters from ROS paramters server.
 	* If a requested paramter is not set, it will be assigned default value.
 	*/
+	bool bDebug;
+	nh.param("debug", bDebug, false);
 	int myID, rows, cols;
 	nh.param("myID", myID, 0);
 
@@ -154,15 +156,15 @@ int main(int argc, char **argv)
 	* than we can send them, the number here specifies how many messages to
 	* buffer up before throwing some away.
 	*/
-	ros::Publisher dlp_state_pub = nh.advertise<dlp::DlpState>("dlp_state", 10);
+	ros::Publisher dlp_state_pub = nh.advertise<dlp::DlpState>("dlp_state", 1);
 
 	/**
 	* Subscribers
 	*/
 	CallBacks cb;
-	ros::Subscriber d_loc_sub = nh.subscribe("/defenders_locations", 10, &CallBacks::d_loc_cb, &cb);
-	ros::Subscriber e_loc_sub = nh.subscribe("/enemy_locations", 10, &CallBacks::e_loc_cb, &cb);
-	ros::Subscriber local_enu_sub = nh.subscribe("mavros/local_position/pose", 10, &CallBacks::local_enu_cb, &cb);
+	ros::Subscriber d_loc_sub = nh.subscribe("/defenders_locations", 1, &CallBacks::d_loc_cb, &cb);
+	ros::Subscriber e_loc_sub = nh.subscribe("/enemy_locations", 1, &CallBacks::e_loc_cb, &cb);
+	ros::Subscriber local_enu_sub = nh.subscribe("mavros/local_position/pose", 1, &CallBacks::local_enu_cb, &cb);
 
 	ros::Rate loop_rate(update_freq);
 
@@ -170,7 +172,7 @@ int main(int argc, char **argv)
 	* Create DLP problem and set parameters.
 	*/
 	DLP problem;
-	problem.DEBUG = true;
+	problem.DEBUG = bDebug;
 	problem.set_myID(myID);
 
 	problem.set_nRows(grid_size[0]);
@@ -328,13 +330,13 @@ int main(int argc, char **argv)
 
 		my_state.my_next_position.x = enu(0,0);
 		my_state.my_next_position.y = enu(1,0);
-		my_state.my_next_position.x = altitude_setpoint;
+		my_state.my_next_position.z = altitude_setpoint;
 		my_state.sensed_neighbors.resize(problem.get_N_sensed_neighbors());
 		for (int i=0; i< problem.get_N_sensed_neighbors(); i++){
 			my_state.sensed_neighbors[i] = sensedN(i,0);
 		}
 
-		my_state.execution_time = (float)( (end-start)/( (clock_t)1000000) );
+		my_state.execution_time_ms = (float)( (end-start)/( (clock_t)1000) );
 
 		// publish my_state msg
 		dlp_state_pub.publish(my_state);

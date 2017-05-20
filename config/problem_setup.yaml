@@ -1,4 +1,5 @@
 # Setup problem/game parameters before running the dlp_node
+debug: False
 # unique agent ID, starts from 0
 myID: 0
 # [rows, columns]
@@ -22,5 +23,7 @@ Tp: 2
 neighbor_radius: 1
 #d_start_locations
 update_freq: 50
+# home position
+home: [1.0, 1.0]
 # fixed altitude setpoint
 altitude_setpoint: 1.0

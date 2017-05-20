@@ -6,4 +6,4 @@ geometry_msgs/Point32 my_current_position
 geometry_msgs/Point32 my_next_position
 int32[] sensed_neighbors
 # in seconds
-float32 execution_time
+float32 execution_time_ms

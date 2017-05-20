@@ -3,7 +3,7 @@
 import rospy
 from numpy import array
 from std_msgs.msg import *
-from geometry_msgs.msg import Point, Point32, PoseStamped, Quaternion
+from geometry_msgs.msg import Point, Point32, PoseStamped, Quaternion, Pose
 from dlp.msg import DefendersState, EnemyState, MasterCommand
 from optitrack.msg import RigidBody, RigidBodyArray
 from math import sqrt, ceil
@@ -23,9 +23,9 @@ Supervisory Node
 class MasterC():
 	def __init__(self):
 
-		# number of agents
-		self.Nd = 3
-		self.Ne = 2
+		# number of agents, ROS parameters
+		self.Nd = rospy.get_param('N_defenders', 3)
+		self.Ne = rospy.get_param('N_attackers', 2)
 
 		# capture distance, [m]
 		self.cap_dist = 0.3
@@ -88,22 +88,22 @@ class MasterC():
 		else:
 			self.d_msg.header.stamp = rospy.Time.now()
 			self.e_msg.header.stamp = rospy.Time.now()
+			self.d_msg.defenders_position = []
+			self.e_msg.enemy_position = []
 			for d in range(self.Nd):
-				self.d_msg.defenders_position[d].x = -msg.bodies[d].pose.position.x
-				self.d_msg.defenders_position[d].y =  msg.bodies[d].pose.position.z 
-				self.d_msg.defenders_position[d].z =  msg.bodies[d].pose.position.y
-				x = self.d_msg.defenders_position[d].x
-				y = self.d_msg.defenders_position[d].y
-				z = self.d_msg.defenders_position[d].z
-				self.d_msg.defenders_sectors[d] = self.enu2sector(x,y,z)
+				p = Point32()
+				p.x = -msg.bodies[d].pose.position.x
+				p.y = msg.bodies[d].pose.position.z 
+				p.z = msg.bodies[d].pose.position.y
+				self.d_msg.defenders_position.append(p)
+				self.d_msg.defenders_sectors[d] = self.enu2sector(p.x,p.y,p.z)
 			for e in range(self.Nd, self.Nd+self.Ne):
-				self.e_msg.enemy_position[e].x = -msg.bodies[e].pose.position.x
-				self.e_msg.enemy_position[e].y =  msg.bodies[e].pose.position.z 
-				self.e_msg.enemy_position[e].z =  msg.bodies[e].pose.position.y
-				x = self.e_msg.enemy_position[e].x
-				y = self.e_msg.enemy_position[e].y
-				z = self.e_msg.enemy_position[e].z
-				self.e_msg.enemy_sectors[e] = self.enu2sector(x,y,z)
+				p = Point32()
+				p.x = -msg.bodies[e].pose.position.x
+				p.y = msg.bodies[e].pose.position.z 
+				p.z = msg.bodies[e].pose.position.y
+				self.e_msg.enemy_position.append(p)
+				self.e_msg.enemy_sectors[e] = self.enu2sector(p.x,p.y,p.z)
 
 	def enu2sector(self,x_enu,y_enu,z_enu):
 		grid_size=[7,7]
@@ -134,20 +134,26 @@ class MasterC():
 		return ( (row*nCols) - (nCols-col) )
 
 	def battle(self):
-		master_msg.header.stamp = rospy.Time.now()
+		self.master_msg.header.stamp = rospy.Time.now()
 		#  send battle command to all agents
 		cmd = []
 		s='battle'
+		self.master_msg.defender_cmd = []
+		self.master_msg.attacker_cmd = []
 		for i in range(self.Nd):
 			cmd.append(s)
-		master_msg.defender_cmd=cmd
+		self.master_msg.defender_cmd=cmd
 		cmd = []
 		for i in range(self.Ne):
 			cmd.append(s)
-		master_msg.attacker_cmd=cmd
+		self.master_msg.attacker_cmd=cmd
 
 	def checkEnemyCapture(self):
 		if (self.nRB >= (self.Nd+self.Ne)):
+			# init
+			self.e_msg.is_capture = []
+			for e in range(self.Ne):
+				self.e_msg.is_capture.append(False)
 			# exhaustive check
 			for e in range(self.Ne):
 				e_x = e_msg.enemy_position[e].x
@@ -187,6 +193,8 @@ def main():
 	# Main loop
 	while not rospy.is_shutdown():
 		if (mObj.nRB >= (mObj.Nd+mObj.Ne)):
+			mObj.checkEnemyCapture()
+			mObj.battle()
 			d_pub.publish(mObj.d_msg)
 			e_pub.publish(mObj.e_msg)
 			master_pub.publish(mObj.master_msg)
