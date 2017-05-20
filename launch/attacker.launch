@@ -1,0 +1,9 @@
+<launch>
+	<arg name="id" default="0"/>
+	<group ns="attacker_$(arg id)">
+		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+
+		<node pkg="dlp" type="attacker_node.py" name="attacker_node_$(arg id)"  required="true" output="screen">
+        	</node>
+	</group>
+</launch>

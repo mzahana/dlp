@@ -76,6 +76,8 @@ class Utils():
 		self.e_msg = EnemyState()
 		self.master_msg = MasterCommand()
 		self.dlp_msg = DlpState()
+
+		# flags
 		self.home_flag = False
 		self.takeoff_flag = False
 		self.land_flag = False
@@ -173,9 +175,9 @@ def main():
 			cb.battle_flag = False
 			# check if we are in the air
 			if cb.dlp_msg.my_current_position.z > 0.5:
-				rospy.logwarn('Agent %s: Already in the air.', cb.my_id)
+				rospy.logwarn('Defender %s: Already in the air.', cb.my_id)
 			else:
-				rospy.logwarn('Agent %s: Arm and Takeoff.', cb.my_id)
+				rospy.logwarn('Defender %s: Arm and Takeoff.', cb.my_id)
 				if cb.dlp_msg.my_current_position.z < 0.4:
 					cb.setp.position.x = cb.dlp_msg.my_current_position.x
 					cb.setp.position.y = cb.dlp_msg.my_current_position.y
@@ -184,7 +186,7 @@ def main():
 				cb.takeoff_flag = False
 		elif cb.land_flag:
 			cb.battle_flag = False
-			rospy.logwarn('Agent %s: Landing', cb.my_id)
+			rospy.logwarn('Defender %s: Landing', cb.my_id)
 			mode.setAutoLandMode()
 			cb.land_flag = False
 		elif cb.battle_flag:
@@ -196,20 +198,20 @@ def main():
 		if cb.master_msg.allCaptured:
 			cb.battle_flag = False
 			rospy.logwarn('All captured!')
-			rospy.logwarn('Agent %s: Landing', cb.my_id)
+			rospy.logwarn('Defender %s: Landing', cb.my_id)
 			mode.setAutoLandMode()
 			break
 		if cb.master_msg.gameEnd:
 			cb.battle_flag = False
 			rospy.logwarn('Time is up!')
-			rospy.logwarn('Agent %s: Landing', cb.my_id)
+			rospy.logwarn('Defender %s: Landing', cb.my_id)
 			mode.setAutoLandMode()
 			break
 
 		if cb.disarm_flag:
 			cb.battle_flag = False
 			cb.disarm_flag = False
-			rospy.logwarn('Agent %s: Disarming', cb.my_id)
+			rospy.logwarn('Defender %s: Disarming', cb.my_id)
 			mode.setDisarm()
 
 		# publish offboard position setpoint
