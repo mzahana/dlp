@@ -75,6 +75,7 @@ class Utils():
 		self.d_msg = DefendersState()
 		self.e_msg = EnemyState()
 		self.master_msg = MasterCommand()
+		self.local_pose = Point(0.0, 0.0, 0.0)
 
 		# flags
 		self.home_flag = False
@@ -98,7 +99,7 @@ class Utils():
 		self.setp.type_mask	= int('010111111000', 2)
 
 		# get altitude setpoint from parameters
-		self.altSp = rospy.get_param('altitude_setpoint')
+		self.altSp = 1.0
 		self.setp.position.z = self.altSp
 
 	def dCb(self, msg):
@@ -133,6 +134,12 @@ class Utils():
 	def battleCb(self, msg):
 		if msg is not None:
 			self.battle_flag = msg.data
+
+	def localCb(self, msg):
+		if msg is not None:
+			self.local_pose.x = msg.pose.position.x
+			self.local_pose.y = msg.pose.position.y
+			self.local_pose.z = msg.pose.position.z
 		
 
 
@@ -170,13 +177,13 @@ def main():
 		elif cb.takeoff_flag:
 			cb.battle_flag = False
 			# check if we are in the air
-			if cb.dlp_msg.my_current_position.z > 0.5:
+			if cb.local_pose.z > 0.5:
 				rospy.logwarn('Attacker %s: Already in the air.', cb.my_id)
 			else:
 				rospy.logwarn('Attacker %s: Arm and Takeoff.', cb.my_id)
-				if cb.dlp_msg.my_current_position.z < 0.4:
-					cb.setp.position.x = cb.dlp_msg.my_current_position.x
-					cb.setp.position.y = cb.dlp_msg.my_current_position.y
+				if cb.local_pose.z < 0.4:
+					cb.setp.position.x = cb.local_pose.x
+					cb.setp.position.y = cb.local_pose.y
 				cb.setp.position.z = cb.altSp
 				mode.setArm()
 				cb.takeoff_flag = False
