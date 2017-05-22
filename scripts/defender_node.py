@@ -176,9 +176,10 @@ def main():
 			# check if we are in the air
 			if cb.dlp_msg.my_current_position.z > 0.5:
 				rospy.logwarn('Defender %s: Already in the air.', cb.my_id)
+				cb.takeoff_flag = False
 			else:
 				rospy.logwarn('Defender %s: Arm and Takeoff.', cb.my_id)
-				if cb.dlp_msg.my_current_position.z < 0.4:
+				if cb.dlp_msg.my_current_position.z < 0.3:
 					cb.setp.position.x = cb.dlp_msg.my_current_position.x
 					cb.setp.position.y = cb.dlp_msg.my_current_position.y
 				cb.setp.position.z = cb.altSp

@@ -3,6 +3,7 @@
 import rospy
 from numpy import array
 from std_msgs.msg import *
+from sensor_msgs.msg import Joy
 from geometry_msgs.msg import Point, Point32, PoseStamped, Quaternion
 from mavros_msgs.msg import *
 from mavros_msgs.srv import *
@@ -71,21 +72,27 @@ class Utils():
 	def __init__(self):
 
 		self.local_pose = Point(0.0, 0.0, 0.0)
+		self.joy_msg = Joy()
+		self.joy_msg.axes=[0.0, 0.0, 0.0]
+
+		# step size multiplies joystick input
+		self.joy_FACTOR = 2.0
 
 		# flags
 		self.home_flag = False
 		self.takeoff_flag = False
 		self.land_flag = False
 		self.disarm_flag = False
+		self.arm_flag = False
 
 		# Instantiate a setpoint topic structure
 		self.setp		= PositionTarget()
 		# use position setpoints
-		self.setp.type_mask	= int('010111111000', 2)
+		self.setp.type_mask	= int('01011111000', 2)
 
 		# get altitude setpoint from parameters
-		self.altSp = 1.0
-		self.setp.position.z = 1.0
+		self.altSp = rospy.get_param("altitude_setpoint", 1.0)
+		self.setp.position.z = self.altSp
 
 
 	def homeCb(self, msg):
@@ -100,6 +107,10 @@ class Utils():
 		if msg is not None:
 			self.land_flag = msg.data
 
+	def armCb(self, msg):
+		if msg is not None:
+			self.arm_flag = msg.data
+
 	def disarmCb(self, msg):
 		if msg is not None:
 			self.disarm_flag = msg.data
@@ -109,6 +120,16 @@ class Utils():
 			self.local_pose.x = msg.pose.position.x
 			self.local_pose.y = msg.pose.position.y
 			self.local_pose.z = msg.pose.position.z
+
+	def joyCb(self, msg):
+		if msg is not None:
+			self.joy_msg = msg
+
+	def joy2setpoint(self):
+		x = -1.0*self.joy_msg.axes[0]
+		y = self.joy_msg.axes[1]
+		self.setp.position.x = self.local_pose.x + self.joy_FACTOR*x
+		self.setp.position.y = self.local_pose.y + self.joy_FACTOR*y
 		
 
 
@@ -123,10 +144,9 @@ def main():
 	rospy.Subscriber('/takeoff', Bool, cb.takeoffCb)
 	rospy.Subscriber('/land', Bool, cb.landCb)
 	rospy.Subscriber('/disarm', Bool, cb.disarmCb)
-	rospy.Subscriber('/disarm', Bool, cb.disarmCb)
-	rospy.Subscriber('mavros/local_position/pose', PoseStamped, cb.disarmCb)
-
-	# TODO: subscribe to joystick topic
+	rospy.Subscriber('/arm', Bool, cb.armCb)
+	rospy.Subscriber('mavros/local_position/pose', PoseStamped, cb.localCb)
+	rospy.Subscriber('joy', Joy, cb.joyCb)
 
 	setp_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=1)
 	
@@ -145,6 +165,7 @@ def main():
 			# check if we are in the air
 			if cb.local_pose.z > 0.5:
 				rospy.logwarn('Agent: Already in the air.')
+				cb.takeoff_flag = False
 			else:
 				rospy.logwarn('Agent: Arm and Takeoff.')
 				if cb.local_pose.z < 0.4:
@@ -152,16 +173,24 @@ def main():
 					cb.setp.position.y = cb.local_pose.y
 				cb.setp.position.z = cb.altSp
 				mode.setArm()
+				mode.setOffboardMode()
 				cb.takeoff_flag = False
 		elif cb.land_flag:
 			rospy.logwarn('Agent: Landing')
 			mode.setAutoLandMode()
 			cb.land_flag = False
+		elif rospy.get_param('enable_joy', False):
+			cb.joy2setpoint()
 
 		if cb.disarm_flag:
 			cb.disarm_flag = False
 			rospy.logwarn('Agent: Disarming')
 			mode.setDisarm()
+
+		if cb.arm_flag:
+			cb.arm_flag = False
+			rospy.logwarn('Agent: Arming')
+			mode.setArm()
 
 		# publish offboard position setpoint
 		cb.setp.header.stamp = rospy.Time.now()

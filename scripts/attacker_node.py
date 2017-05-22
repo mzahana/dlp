@@ -3,6 +3,7 @@
 import rospy
 from numpy import array
 from std_msgs.msg import *
+from sensor_msgs.msg import Joy
 from geometry_msgs.msg import Point, Point32, PoseStamped, Quaternion
 from dlp.msg import DefendersState, EnemyState, MasterCommand
 from mavros_msgs.msg import *
@@ -76,6 +77,11 @@ class Utils():
 		self.e_msg = EnemyState()
 		self.master_msg = MasterCommand()
 		self.local_pose = Point(0.0, 0.0, 0.0)
+		self.joy_msg = Joy()
+		self.joy_msg.axes=[0.0, 0.0, 0.0]
+
+		# step size multiplies joystick input
+		self.joy_FACTOR = 2.0
 
 		# flags
 		self.home_flag = False
@@ -102,6 +108,7 @@ class Utils():
 		self.altSp = 1.0
 		self.setp.position.z = self.altSp
 
+	# Callbacks
 	def dCb(self, msg):
 		if msg is not None:
 			self.d_msg = msg
@@ -140,6 +147,16 @@ class Utils():
 			self.local_pose.x = msg.pose.position.x
 			self.local_pose.y = msg.pose.position.y
 			self.local_pose.z = msg.pose.position.z
+
+	def joyCb(self, msg):
+		if msg is not None:
+			self.joy_msg = msg
+	# Helper function
+	def joy2setpoint(self):
+		x = -1.0*self.joy_msg.axes[0]
+		y = self.joy_msg.axes[1]
+		self.setp.position.x = self.local_pose.x + self.joy_FACTOR*x
+		self.setp.position.y = self.local_pose.y + self.joy_FACTOR*y
 		
 
 
@@ -150,6 +167,8 @@ def main():
 
 	rospy.init_node('attacker_node', anonymous=True)
 
+	# subscribers
+	rospy.Subscriber('mavros/local_position/pose', PoseStamped, cb.localCb)
 	rospy.Subscriber('/defenders_locations', DefendersState, cb.dCb)
 	rospy.Subscriber('/enemy_locations', EnemyState, cb.eCb)
 	rospy.Subscriber('/commander', MasterCommand, cb.mCb)
@@ -158,12 +177,13 @@ def main():
 	rospy.Subscriber('/takeoff', Bool, cb.takeoffCb)
 	rospy.Subscriber('/land', Bool, cb.landCb)
 	rospy.Subscriber('/disarm', Bool, cb.disarmCb)
-	# TODO: subscribe to joystick topic
+	rospy.Subscriber('joy', Joy, cb.joyCb)
 
+	# publishers
 	setp_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=1)
 	
+	# ros loop rate
 	freq = rospy.get_param('update_freq',50.0)
-
 	rate = rospy.Rate(freq)
 
 
@@ -179,13 +199,15 @@ def main():
 			# check if we are in the air
 			if cb.local_pose.z > 0.5:
 				rospy.logwarn('Attacker %s: Already in the air.', cb.my_id)
+				cb.takeoff_flag = False
 			else:
 				rospy.logwarn('Attacker %s: Arm and Takeoff.', cb.my_id)
-				if cb.local_pose.z < 0.4:
+				if cb.local_pose.z < 0.3:
 					cb.setp.position.x = cb.local_pose.x
 					cb.setp.position.y = cb.local_pose.y
 				cb.setp.position.z = cb.altSp
 				mode.setArm()
+				mode.setOffboardMode()
 				cb.takeoff_flag = False
 		elif cb.land_flag:
 			cb.battle_flag = False
@@ -194,10 +216,8 @@ def main():
 			cb.land_flag = False
 		
 		elif cb.battle_flag:
-		# TODO: implement joystick control
-			cb.setp.position.x = 0
-			cb.setp.position.y = 0
-			cb.setp.position.z = 1
+			if rospy.get_param('enable_joy', False):
+				cb.joy2setpoint()
 
 		# check if all attackers are captured, then land and exit node
 		if cb.master_msg.allCaptured:

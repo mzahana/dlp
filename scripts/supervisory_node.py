@@ -115,8 +115,11 @@ class MasterC():
 		origin_shifts= [0,0]
 		origin_shifts = rospy.get_param('origin_shifts')
 
-		shift_x = origin_shifts[0];
-		shift_y = origin_shifts[1];
+		shift_x = origin_shifts[0]
+		shift_y = origin_shifts[1]
+
+		dcols_x = sector_size[0]		
+		drows_y = sector_size[1]
 
 		x = x_enu+shift_x;
 		y = y_enu+shift_y;
@@ -151,13 +154,13 @@ class MasterC():
 	def checkEnemyCapture(self):
 		if (self.nRB >= (self.Nd+self.Ne)):
 			# init
-			self.e_msg.is_capture = []
+			self.e_msg.is_captured = []
 			for e in range(self.Ne):
-				self.e_msg.is_capture.append(False)
+				self.e_msg.is_captured.append(False)
 			# exhaustive check
 			for e in range(self.Ne):
-				e_x = e_msg.enemy_position[e].x
-				e_y = e_msg.enemy_position[e].y
+				e_x = self.e_msg.enemy_position[e].x
+				e_y = self.e_msg.enemy_position[e].y
 				for d in range(self.Nd):
 					d_x = self.d_msg.defenders_position[d].x
 					d_y = self.d_msg.defenders_position[d].y
