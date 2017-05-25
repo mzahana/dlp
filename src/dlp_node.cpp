@@ -256,6 +256,9 @@ int main(int argc, char **argv)
 	bool use_gps;
 	nh.param("use_gps", use_gps, false);
 
+	bool use_sim;
+	nh.param("use_sim", use_gps, false);
+
 	float p_lat0;
 	nh.param<float>("lat0", p_lat0, 47.397742);
 
@@ -459,11 +462,10 @@ int main(int argc, char **argv)
 			enu(2,0)= cb.local_enu_msg.pose.position.z;
 			problem.set_origin_shifts(origin_shifts[0], origin_shifts[1]);
 		}
-		//cout << "dx/dy: "<< hp.dx<< " , " << hp.dy<< endl;
-		//cout << " current sector: "<< problem.get_sector_from_ENU(enu) << endl;
-		//problem.set_my_current_location(problem.get_sector_from_ENU(enu));
-		cout << " current sector: "<< dloc(myID,0) << endl;
-		problem.set_my_current_location(dloc(myID,0));
+		if (use_sim)
+			problem.set_my_current_location(dloc(myID,0));
+		else
+			problem.set_my_current_location(problem.get_sector_from_ENU(enu));
 
 		// test conversion from sector to ENU and vise versa
 		//enu = problem.get_ENU_from_sector(dloc(myID,0));

@@ -3,6 +3,7 @@
 import rospy
 from numpy import array
 from std_msgs.msg import *
+from gazebo_msgs.msg  import ModelStates
 from geometry_msgs.msg import Point, Point32, PoseStamped, Quaternion, Pose
 from sensor_msgs.msg import NavSatFix
 from dlp.msg import DefendersState, EnemyState, MasterCommand
@@ -32,6 +33,9 @@ class MasterC():
 		# GPS coords of grid zero position
 		self.lat0 = rospy.get_param('lat0', 47.397742)
 		self.lon0 = rospy.get_param('long0', 8.5455933)
+
+		# gazebo model state
+		self.gz_msg = ModelStates()
 
 		# capture distance, [m]
 		self.cap_dist = rospy.get_param('capture_distance', 1.0)
@@ -75,6 +79,92 @@ class MasterC():
 		self.rate = rospy.Rate(50)
 
 	# Subscribers Callbacks
+	def gazeboCb(self, msg):
+		if msg is not None:
+			self.gz_msg = msg
+
+	def d1PosUpdate(self):
+		model_name = 'iris_1'
+		g_i = -1
+		i=0 # agent id in game team
+		for c in range(len(self.gz_msg.name)):
+			if self.gz_msg.name[c] == model_name:
+				# index of model in gazebo msg
+				g_i = c
+				break
+
+		# sanity check: make sure no negative index
+		if g_i > -1:
+			x = self.gz_msg.pose[g_i].position.x
+			y = self.gz_msg.pose[g_i].position.y
+			p=Point32(x, y, 0.0)
+			self.d_msg.defenders_position[i] = p
+			# get sector
+			self.d_msg.defenders_sectors[i] = self.enu2sector(x, y, 0.0)
+
+	def d2PosUpdate(self):
+		model_name = 'iris_3'
+		g_i = -1
+		i=1 # agent id in game team
+		for c in range(len(self.gz_msg.name)):
+			if self.gz_msg.name[c] == model_name:
+				# index of model in gazebo msg
+				g_i = c
+				break
+
+		# sanity check: make sure no negative index
+		if g_i > -1:
+			x = self.gz_msg.pose[g_i].position.x
+			y = self.gz_msg.pose[g_i].position.y
+			p=Point32(x, y, 0.0)
+			self.d_msg.defenders_position[i] = p
+			# get sector
+			self.d_msg.defenders_sectors[i] = self.enu2sector(x, y, 0.0)
+
+	def d3PosUpdate(self):
+		model_name = 'iris_4'
+		g_i = -1
+		i=2 # agent id in game team
+		for c in range(len(self.gz_msg.name)):
+			if self.gz_msg.name[c] == model_name:
+				# index of model in gazebo msg
+				g_i = c
+				break
+
+		# sanity check: make sure no negative index
+		if g_i > -1:
+			x = self.gz_msg.pose[g_i].position.x
+			y = self.gz_msg.pose[g_i].position.y
+			p=Point32(x, y, 0.0)
+			self.d_msg.defenders_position[i] = p
+			# get sector
+			self.d_msg.defenders_sectors[i] = self.enu2sector(x, y, 0.0)
+
+	def e1PosUpdate(self):
+		model_name = 'iris_2'
+		g_i = -1
+		i=0 # agent id in game team
+		for c in range(len(self.gz_msg.name)):
+			if self.gz_msg.name[c] == model_name:
+				# index of model in gazebo msg
+				g_i = c
+				break
+
+		# sanity check: make sure no negative index
+		if g_i > -1:
+			x = self.gz_msg.pose[g_i].position.x
+			y = self.gz_msg.pose[g_i].position.y
+			p=Point32(x, y, 0.0)
+			self.e_msg.enemy_position[i] = p
+			# get sector
+			self.e_msg.enemy_sectors[i] = self.enu2sector(x, y, 0.0)
+
+	def updateAgentsPos(self):
+		self.d1PosUpdate()
+		self.d2PosUpdate()
+		self.d3PosUpdate()
+		self.e1PosUpdate()
+
 	# gets agent's gps position, converts it to grid position in ENU
 	def d1poseCb(self, msg):
 		i=0
@@ -92,6 +182,20 @@ class MasterC():
 
 	def d2poseCb(self, msg):
 		i=1
+		lat = msg.latitude
+		lon = msg.longitude
+		#print "d lat/long: ", lat, lon
+		# convert gps to grid position in ENU
+		x_enu, y_enu = hp.LLA_local_deltaxy(self.lat0, self.lon0,  lat,  lon)
+		#print "x/y: ", x_enu, y_enu
+		p=Point32(x_enu, y_enu,0.0)
+		self.d_msg.defenders_position[i] = p
+
+		# get sector
+		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
+
+	def d3poseCb(self, msg):
+		i=2
 		lat = msg.latitude
 		lon = msg.longitude
 		#print "d lat/long: ", lat, lon
@@ -207,15 +311,20 @@ def main():
 	e_pub = rospy.Publisher('/enemy_locations', EnemyState, queue_size=1)
 	master_pub = rospy.Publisher('/commander', MasterCommand, queue_size=1)
 
+	# subscirbe to gazebo/model_state; to get uav positions
+	rospy.Subscriber('/gazebo/model_states', ModelStates, mObj.gazeboCb)
+
 	# subscribe to agents gps topics
-	rospy.Subscriber('/defender1/mavros/global_position/global', NavSatFix, mObj.d1poseCb)
+	#rospy.Subscriber('/defender1/mavros/global_position/global', NavSatFix, mObj.d1poseCb)
 	#rospy.Subscriber('/defender2/mavros/global_position/global', NavSatFix, mObj.d2poseCb)
-	rospy.Subscriber('/attacker1/mavros/global_position/global', NavSatFix, mObj.e1poseCb)
+	#rospy.Subscriber('/defender3/mavros/global_position/global', NavSatFix, mObj.d3poseCb)
+	#rospy.Subscriber('/attacker1/mavros/global_position/global', NavSatFix, mObj.e1poseCb)
 
 	# Main loop
 	while not rospy.is_shutdown():
 		mObj.checkEnemyCapture()
 		mObj.battle()
+		mObj.updateAgentsPos()
 		mObj.d_msg.header.stamp = rospy.Time.now()
 		mObj.e_msg.header.stamp = rospy.Time.now()
 		mObj.master_msg.header.stamp = rospy.Time.now() 
