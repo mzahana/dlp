@@ -28,7 +28,7 @@ class MasterC():
 		self.Ne = rospy.get_param('N_attackers', 2)
 
 		# capture distance, [m]
-		self.cap_dist = 0.3
+		self.cap_dist = rospy.get_param('capture_distance', 1.0)
 		
 		# game time, [sec]
 		self.Tgame = 120
@@ -169,8 +169,15 @@ class MasterC():
 						self.e_msg.is_captured[e] = True
 
 			# check if all enemies are captured
+			c = 0
 			for e in range(self.Ne):
-				self.master_msg.allCaptured = self.master_msg.allCaptured and self.e_msg.is_captured[e]
+				if self.e_msg.is_captured[e] == True:
+					c = c+1
+
+			if c == self.Ne:
+				self.master_msg.allCaptured = True
+			else:
+				self.master_msg.allCaptured = False
 		else:
 			rospy.logwarn('Length of received rigid bodies is less than expected number of agents.')
 
