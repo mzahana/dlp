@@ -30,6 +30,7 @@
 #include <assert.h>     /* assert */
 #include <algorithm>	/* min/max */
 #include <vector>       // std::vector
+#include <math.h>       /* sin */
 //#include <chrono> 		/* time measurments */
 using namespace Eigen;
 using namespace std;

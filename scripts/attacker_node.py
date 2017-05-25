@@ -3,11 +3,12 @@
 import rospy
 from numpy import array
 from std_msgs.msg import *
-from sensor_msgs.msg import Joy
+from sensor_msgs.msg import Joy, NavSatFix
 from geometry_msgs.msg import Point, Point32, PoseStamped, Quaternion
 from dlp.msg import DefendersState, EnemyState, MasterCommand
 from mavros_msgs.msg import *
 from mavros_msgs.srv import *
+import helpers as hp
 
 class fcuModes:
 	def __init__(self):
@@ -82,6 +83,27 @@ class Utils():
 
 		# step size multiplies joystick input
 		self.joy_FACTOR = 2.0
+		
+		# my GPS coords
+		self.my_lat = 0.0
+		self.my_lon = 0.0
+
+		# my current grid position (not mavros local_position)
+		self.grid_pos_x = 0.0
+		self.grid_pos_y = 0.0
+
+		# gps coords of zero position in grid
+		self.lat0 = rospy.get_param('lat0', 47.397742)
+		self.lon0 = rospy.get_param('long0', 8.5455933)
+
+		# is gps used
+		self.use_gps = rospy.get_param('use_gps', False)
+
+		# Fence params
+		self.fence_x_min = rospy.get_param('fence_min_x', 0.0)
+		self.fence_x_max = rospy.get_param('fence_max_x', 5.0)
+		self.fence_y_min = rospy.get_param('fence_min_y', 0.0)
+		self.fence_y_max = rospy.get_param('fence_max_y', 5.0)
 
 		# flags
 		self.home_flag = False
@@ -147,6 +169,10 @@ class Utils():
 			self.local_pose.x = msg.pose.position.x
 			self.local_pose.y = msg.pose.position.y
 			self.local_pose.z = msg.pose.position.z
+	def gpsCb(self, msg):
+		if msg is not None:
+			self.my_lat = msg.latitude
+			self.my_lon = msg.longitude
 
 	def joyCb(self, msg):
 		if msg is not None:
@@ -155,8 +181,59 @@ class Utils():
 	def joy2setpoint(self):
 		x = -1.0*self.joy_msg.axes[0]
 		y = self.joy_msg.axes[1]
-		self.setp.position.x = self.local_pose.x + self.joy_FACTOR*x
-		self.setp.position.y = self.local_pose.y + self.joy_FACTOR*y
+
+		if self.use_gps:
+			dx, dy = self.boundSp(self.joy_FACTOR*x, self.joy_FACTOR*y)
+			self.setp.position.x = self.local_pose.x + dx
+			self.setp.position.y = self.local_pose.y + dy
+		else:
+			sp_x = self.local_pose.x + self.joy_FACTOR*x
+			sp_y = self.local_pose.y + self.joy_FACTOR*y
+			sp_x, sp_y = self.boundSp(sp_x, sp_y)
+			self.setp.position.x = sp_x
+			self.setp.position.y = sp_y
+			
+
+	def get_grid_pos(self):
+		self.grid_pos_x, self.grid_pos_y = hp.LLA_local_deltaxy(self.lat0, self.lon0, self.my_lat, self.my_lon)
+	
+	# bound position setpoints, according to fence ROS params
+	# should input the 'change' in setpoint 
+	def boundSp(self, dx, dy):
+		if self.use_gps:
+			lat, lon = hp.local_deltaxy_LLA(self.my_lat, self.my_lon,  dy,  dx) # x/y siwtch for NED
+			# get position in grid
+			x,y = hp.LLA_local_deltaxy(self.lat0, self.lon0,  lat,  lon)
+			if x < self.fence_x_min:
+				x = self.fence_x_min
+			if x > self.fence_x_max:
+				x = self.fence_x_max
+			if y < self.fence_y_min:
+				y = self.fence_y_min
+			if y > self.fence_y_max:
+				y = self.fence_y_max
+
+			# convert to mavros local_poistion
+			lat, lon = hp.local_deltaxy_LLA(self.lat0, self.lon0,  y,  x) # x/y siwtch for NED
+			x,y = hp.LLA_local_deltaxy(self.my_lat, self.my_lon,  lat,  lon)
+			# x,y here are the change in setpoint, not the setpoint directly
+
+			return (x,y)
+		else:
+			x = dx
+			y = dy
+			if x < self.fence_x_min:
+				x = self.fence_x_min
+			if x > self.fence_x_max:
+				x = self.fence_x_max
+			if y < self.fence_y_min:
+				y = self.fence_y_min
+			if y > self.fence_y_max:
+				y = self.fence_y_max
+
+			# x,y here are the setpoints directly
+			return (x,y)
+
 		
 
 
@@ -168,6 +245,7 @@ def main():
 	rospy.init_node('attacker_node', anonymous=True)
 
 	# subscribers
+	rospy.Subscriber('mavros/global_position/global', NavSatFix, cb.gpsCb)
 	rospy.Subscriber('mavros/local_position/pose', PoseStamped, cb.localCb)
 	rospy.Subscriber('/defenders_locations', DefendersState, cb.dCb)
 	rospy.Subscriber('/enemy_locations', EnemyState, cb.eCb)
@@ -218,6 +296,9 @@ def main():
 		elif cb.battle_flag:
 			if rospy.get_param('enable_joy', False):
 				cb.joy2setpoint()
+
+		if rospy.get_param('enable_joy', False):
+			cb.joy2setpoint()
 
 		# check if all attackers are captured, then land and exit node
 		if cb.master_msg.allCaptured:

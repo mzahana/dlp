@@ -970,11 +970,17 @@ DLP::sense_neighbors(){
 		}
 	}
 	if (DEBUG){
+		cout << "############################################# \n";
+		cout << "mycurrent location: " << my_current_location << "\n";
+		cout << "Current neighbor sectors: " << neighbor_sectors.transpose() << "\n";
+		cout << "number of sensed neighbors: " << N_sensed_neighbors << "\n";
+		cout << "Current Defenders locations: " <<  d_current_locations.transpose() << "\n";
 		if (N_sensed_neighbors>0){
 			cout << "Sensed neighbors: "<< sensed_neighbors.transpose() << "\n";
 		}else{
 			cout << "No neighbors inside the sensed area." << "\n";
 		}
+		cout << "############################################# \n";
 	}
 
 }

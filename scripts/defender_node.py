@@ -174,16 +174,17 @@ def main():
 		elif cb.takeoff_flag:
 			cb.battle_flag = False
 			# check if we are in the air
-			if cb.dlp_msg.my_current_position.z > 0.5:
+			if cb.dlp_msg.my_current_local_position.z > 0.5:
 				rospy.logwarn('Defender %s: Already in the air.', cb.my_id)
 				cb.takeoff_flag = False
 			else:
 				rospy.logwarn('Defender %s: Arm and Takeoff.', cb.my_id)
 				if cb.dlp_msg.my_current_position.z < 0.3:
-					cb.setp.position.x = cb.dlp_msg.my_current_position.x
-					cb.setp.position.y = cb.dlp_msg.my_current_position.y
+					cb.setp.position.x = cb.dlp_msg.my_current_local_position.x
+					cb.setp.position.y = cb.dlp_msg.my_current_local_position.y
 				cb.setp.position.z = cb.altSp
 				mode.setArm()
+				mode.setOffboardMode()
 				cb.takeoff_flag = False
 		elif cb.land_flag:
 			cb.battle_flag = False
@@ -191,8 +192,8 @@ def main():
 			mode.setAutoLandMode()
 			cb.land_flag = False
 		elif cb.battle_flag:
-			cb.setp.position.x = cb.dlp_msg.my_next_position.x
-			cb.setp.position.y = cb.dlp_msg.my_next_position.y
+			cb.setp.position.x = cb.dlp_msg.my_next_local_position.x
+			cb.setp.position.y = cb.dlp_msg.my_next_local_position.y
 			cb.setp.position.z = cb.altSp
 
 		# check if game time ended or all attackers are captured, then land and exit node

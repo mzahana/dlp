@@ -18,6 +18,9 @@ Base: [1]
 nBaseRef: 3
 # set of base referense sectors
 BaseRef: [2,6,7]
+# strategy weights
+alpha: -0.99
+beta: -0.01
 # prediction horizon
 Tp: 2
 neighbor_radius: 1
@@ -29,3 +32,15 @@ home: [1.0, 1.0]
 altitude_setpoint: 1.0
 # use joystick
 enable_joystick: False
+# whether to use GPS or directly local_position coordinates
+use_gps: False
+# lat/long of zero position
+lat0: 47.397742
+long0: 8.5455933
+# fence
+fence_min_x: 0.0
+fence_max_x: 5.0
+fence_min_y: 0.0
+fence_max_y: 5.0
+# attacker capture distance, [meter]
+capture_distance: 1.5
