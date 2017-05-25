@@ -1,0 +1,5 @@
+<launch>
+	<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+	<node pkg="dlp" type="sim_supervisory_node.py" name="sim_supervisory_node"  required="true" output="screen">
+	</node>
+</launch>
