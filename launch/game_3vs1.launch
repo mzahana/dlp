@@ -5,15 +5,6 @@
 	<arg name="a1_joy" default="False"/>
 	<arg name="a1_joy_dev" default="/dev/input/js0"/>
 
-	<!-- Launch gazebo and autopilots-->
-	<include file="$(find px4)/launch/multi_uav_mavros_sitl.launch"/>
-
-	<!-- Launch simulated master node-->
-	<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
-	<node pkg="dlp" type="sim_supervisory_node.py" name="sim_supervisory_node"  required="true" output="screen">
-	</node>
-
-
 	<!-- Launch defenders nodes-->
 	<!-- defender1 -->
 	<group ns="defender1">
