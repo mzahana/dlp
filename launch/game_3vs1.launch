@@ -1,0 +1,72 @@
+<launch>
+
+	<!-- global arguments -->
+	<!-- attacker1 joystick enable -->
+	<arg name="a1_joy" default="False"/>
+	<arg name="a1_joy_dev" default="/dev/input/js0"/>
+
+	<!-- Launch gazebo and autopilots-->
+	<include file="$(find px4)/launch/multi_uav_mavros_sitl.launch"/>
+
+	<!-- Launch simulated master node-->
+	<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+	<node pkg="dlp" type="sim_supervisory_node.py" name="sim_supervisory_node"  required="true" output="screen">
+	</node>
+
+
+	<!-- Launch defenders nodes-->
+	<!-- defender1 -->
+	<group ns="defender1">
+		<arg name="id" default="0"/>
+		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+		<param name="myID" type="int" value="$(arg id)" />
+
+		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
+        	</node>
+		<node pkg="dlp" type="defender_node.py" name="defender_node_$(arg id)"  required="true" output="screen">
+        	</node>
+	</group>
+
+	<!-- defender2 -->
+	<group ns="defender2">
+		<arg name="id" default="1"/>
+		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+		<param name="myID" type="int" value="$(arg id)" />
+
+		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
+        	</node>
+		<node pkg="dlp" type="defender_node.py" name="defender_node_$(arg id)"  required="true" output="screen">
+        	</node>
+	</group>
+
+	<!-- defender3 -->
+	<group ns="defender3">
+		<arg name="id" default="2"/>
+		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+		<param name="myID" type="int" value="$(arg id)" />
+
+		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
+        	</node>
+		<node pkg="dlp" type="defender_node.py" name="defender_node_$(arg id)"  required="true" output="screen">
+        	</node>
+	</group>
+
+	<!-- launch attackers nodes -->
+	<!-- attacker1 -->
+	<group ns="attacker1">
+		<arg name="id" default="0"/>
+
+		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+
+		<param name="myID" type="int" value="$(arg id)" />
+		<param name="enable_joy" type="bool" value="$(arg a1_joy)" />
+
+		<node pkg="joy" type="joy_node" name="joy_$(arg id)"  required="true" output="screen" if="$(arg a1_joy)">
+			<param name="dev" type="string" value="$(arg a1_joy_dev)" />
+		</node>
+
+		<node pkg="dlp" type="attacker_node.py" name="attacker_node_$(arg id)"  required="true" output="screen">
+        	</node>
+	</group>
+
+</launch>
