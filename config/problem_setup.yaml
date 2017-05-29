@@ -72,4 +72,4 @@ fence_min_y: -2.0
 fence_max_y: 2.2
 
 # attacker capture distance, [meter]
-capture_distance: 1.4
+capture_distance: 2.0
