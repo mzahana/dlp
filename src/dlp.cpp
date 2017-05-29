@@ -971,14 +971,14 @@ DLP::sense_neighbors(){
 	}
 	if (DEBUG){
 		cout << "############################################# \n";
-		cout << "mycurrent location: " << my_current_location << "\n";
-		cout << "Current neighbor sectors: " << neighbor_sectors.transpose() << "\n";
-		cout << "number of sensed neighbors: " << N_sensed_neighbors << "\n";
-		cout << "Current Defenders locations: " <<  d_current_locations.transpose() << "\n";
+		cout << "[sense_neighbors] mycurrent location: " << my_current_location << "\n";
+		cout << "[sense_neighbors] Current neighbor sectors: " << neighbor_sectors.transpose() << "\n";
+		cout << "[sense_neighbors] number of sensed neighbors: " << N_sensed_neighbors << "\n";
+		cout << "[sense_neighbors] Current Defenders locations: " <<  d_current_locations.transpose() << "\n";
 		if (N_sensed_neighbors>0){
-			cout << "Sensed neighbors: "<< sensed_neighbors.transpose() << "\n";
+			cout << "[sense_neighbors] Sensed neighbors: "<< sensed_neighbors.transpose() << "\n";
 		}else{
-			cout << "No neighbors inside the sensed area." << "\n";
+			cout << "[sense_neighbors] No neighbors inside the sensed area." << "\n";
 		}
 		cout << "############################################# \n";
 	}
@@ -997,9 +997,19 @@ DLP::update_LP(){
 	/* prerequisit updates */
 	clock_t start, end;
 	start = clock();
+	if (DEBUG)
+		cout << "================================== \n";
 	DLP::update_X0();
+	if (DEBUG)
+		cout << "[update_LP] X0 is updated \n";
+
 	DLP::update_Xe();
+	if (DEBUG)
+		cout << "[update_LP] Xe is updated \n";
+
 	DLP::setup_optimization_vector();
+	if (DEBUG)
+		cout << "[update_LP] optimization vector, C,  is updated \n";
 
 	/* NOTE: glpk indexing starts from 1 */
 
@@ -1018,8 +1028,10 @@ DLP::update_LP(){
 		glp_set_obj_coef(lp, i+1, C(i,0));
 	}
 	end = clock();
-	if (DEBUG)
-		cout << "Problem updated in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+	if (DEBUG){
+		cout << " [update_LP] Problem updated in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << "================================== \n";
+	}
 
 }
 
@@ -1035,13 +1047,31 @@ DLP::update_LP_dist(){
 	/* prerequisit updates */
 	clock_t start, end;
 	start = clock();
+	if (DEBUG)
+		cout << "================================== \n";
+
 	DLP::update_X0_dist();
+	if (DEBUG)
+		cout << "[update_LP_dist] X0 is updated \n";
+
 	DLP::update_Xe();
+	if (DEBUG)
+		cout << "[update_LP_dist] Xe is updated \n";
+
 	DLP::setup_optimization_vector();// C vector
+	if (DEBUG)
+		cout << "[update_LP_dist] Optimization vector, C,  is updated \n";
+
 	DLP::update_collision_constraint();
+	if (DEBUG)
+		cout << "[update_LP_dist] Collision constraints are updated \n";
+
 
 	/* NOTE: glpk indexing starts from 1 */
 	DLP::setup_glpk_problem();
+	if (DEBUG)
+		cout << "[update_LP_dist] glpk problem is updated \n";
+
 /*
 	// set equality/dynamics constraints
 	for (int i=0; i<nEq; i++){
@@ -1060,8 +1090,10 @@ DLP::update_LP_dist(){
 	*/
 
 	end = clock();
-	if (DEBUG)
-		cout << "Problem updated in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+	if (DEBUG){
+		cout << "[update_LP_dist] Problem updated in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << "================================== \n";
+	}
 
 }
 
@@ -1098,7 +1130,7 @@ DLP::setup_problem(){
 //	cout << "Setup is done in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
 	if (DEBUG)
-		cout << "Setup is done in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << "[setup_problem] Setup is done in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
 	return;
 
 }
@@ -1120,8 +1152,8 @@ DLP::solve_simplex(){
 	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
 	if (DEBUG){
-		cout << "Simplex solver runs in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
-		cout << "obj value = " <<  glp_get_obj_val(lp) << endl;
+		cout << " [solve_simplex] Simplex solver runs in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << " [solve_simplex] obj value = " <<  glp_get_obj_val(lp) << endl;
 	}
 }
 
