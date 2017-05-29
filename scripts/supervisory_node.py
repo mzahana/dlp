@@ -27,6 +27,11 @@ class MasterC():
 		self.Nd = rospy.get_param('N_defenders', 3)
 		self.Ne = rospy.get_param('N_attackers', 2)
 
+		# grid params
+		self.grid_size = rospy.get_param('grid_size')
+		self.sector_size = rospy.get_param('sector_size')
+		self.origin_shifts = rospy.get_param('origin_shifts')
+
 		# capture distance, [m]
 		self.cap_dist = rospy.get_param('capture_distance', 1.0)
 		
@@ -34,6 +39,8 @@ class MasterC():
 		self.Tgame = 120
 
 		self.nRB = 0
+
+		self.posmsg_updated = False
 
 		# msgs
 		self.d_msg = DefendersState()
@@ -43,35 +50,24 @@ class MasterC():
 		# msg initialization
 		self.d_msg.header.stamp = rospy.Time.now()
 		self.d_msg.defenders_count = self.Nd
-		points=[]
-		p=Point32(6.5,5.5,1.0)
-		points.append(p)
-		p=Point32(2.5,4.5,1.0)
-		points.append(p)
-		p=Point32(4.5,4.5,1.0)
-		points.append(p)
-		self.d_msg.defenders_sectors = [14,17,19]
-		self.d_msg.defenders_position = points
 
-		'''
-		d_msg.defenders_position[0].x=0.5
-		d_msg.defenders_position[0].y=4.5
-		d_msg.defenders_position[1].x=2.5
-		d_msg.defenders_position[1].y=4.5
-		d_msg.defenders_position[2].x=4.5
-		d_msg.defenders_position[2].y=4.5
-		'''
+		#self.d_msg.defenders_position = []
+		#self.d_msg.defenders_sectors = []
+		p=Point(0.0,0.0,0.0)
+		for i in range(self.Nd):
+			self.d_msg.defenders_position.append(p)
+			self.d_msg.defenders_sectors.append(i)
 
 		self.e_msg.header.stamp = rospy.Time.now()
 		self.e_msg.enemy_count = self.Ne
-		self.e_msg.enemy_sectors = [28,26]
-		points=[]
-		p=Point32(6.5,3.5,1.0)
-		points.append(p)
-		p=Point32(4.5,3.5,1.0)
-		points.append(p)
-		self.e_msg.enemy_position = points
-		self.e_msg.is_captured = [False, False]
+
+		self.e_msg.enemy_position = []
+		self.e_msg.enemy_sectors = []
+		self.e_msg.is_captured = []
+		for i in range(self.Ne):
+			self.e_msg.enemy_position.append(p)
+			self.e_msg.enemy_sectors.append(i+self.Nd)
+			self.e_msg.is_captured.append(False)
 
 		self.master_msg.allCaptured = False
 		self.master_msg.gameEnd = False
@@ -84,42 +80,38 @@ class MasterC():
 		self.nRB = len(msg.bodies)
 		# Assumes defenders are the first Nd element in the mocap topic, then Ne enemies come next
 		if ( self.nRB < (self.Nd+self.Ne) ):
-			rospy.logwarn('Length of received rigid bodies is less than expected number of agents.')
+			print 'number of agents: ', self.Nd+self.Ne
+			rospy.logwarn('Length of received rigid bodies is less than expected number of agents %s.', self.nRB)
 		else:
+			self.posmsg_updated = True
 			self.d_msg.header.stamp = rospy.Time.now()
 			self.e_msg.header.stamp = rospy.Time.now()
-			self.d_msg.defenders_position = []
-			self.e_msg.enemy_position = []
 			for d in range(self.Nd):
-				p = Point32()
+				p = Point()
 				p.x = -msg.bodies[d].pose.position.x
 				p.y = msg.bodies[d].pose.position.z 
 				p.z = msg.bodies[d].pose.position.y
-				self.d_msg.defenders_position.append(p)
+				self.d_msg.defenders_position[d] = p
 				self.d_msg.defenders_sectors[d] = self.enu2sector(p.x,p.y,p.z)
-			for e in range(self.Nd, self.Nd+self.Ne):
-				p = Point32()
-				p.x = -msg.bodies[e].pose.position.x
-				p.y = msg.bodies[e].pose.position.z 
-				p.z = msg.bodies[e].pose.position.y
-				self.e_msg.enemy_position.append(p)
+			for e in range(self.Ne):
+				p = Point()
+				p.x = -msg.bodies[e+self.Nd].pose.position.x
+				p.y = msg.bodies[e+self.Nd].pose.position.z 
+				p.z = msg.bodies[e+self.Nd].pose.position.y
+				self.e_msg.enemy_position[e] = p
 				self.e_msg.enemy_sectors[e] = self.enu2sector(p.x,p.y,p.z)
 
+			self.checkEnemyCapture()
+
 	def enu2sector(self,x_enu,y_enu,z_enu):
-		grid_size=[7,7]
-		grid_size = rospy.get_param('grid_size')
-		nRows = grid_size[0]*1.0
-		nCols = grid_size[1]*1.0
-		sector_size = [1,1]
-		sector_size = rospy.get_param('sector_size')
-		origin_shifts= [0,0]
-		origin_shifts = rospy.get_param('origin_shifts')
+		nRows = self.grid_size[0]*1.0
+		nCols = self.grid_size[1]*1.0
 
-		shift_x = origin_shifts[0]
-		shift_y = origin_shifts[1]
+		shift_x = self.origin_shifts[0]
+		shift_y = self.origin_shifts[1]
 
-		dcols_x = sector_size[0]		
-		drows_y = sector_size[1]
+		dcols_x = self.sector_size[0]		
+		drows_y = self.sector_size[1]
 
 		x = x_enu+shift_x;
 		y = y_enu+shift_y;
@@ -152,6 +144,9 @@ class MasterC():
 		self.master_msg.attacker_cmd=cmd
 
 	def checkEnemyCapture(self):
+		if self.posmsg_updated == False:
+			return
+
 		if (self.nRB >= (self.Nd+self.Ne)):
 			# init
 			self.e_msg.is_captured = []
@@ -187,9 +182,6 @@ def main():
 	# create Master class object
 	mObj = MasterC()
 
-	# number of agents
-	mObj.Nd = 3
-	mObj.Ne = 2
 
 	# Publishers
 	# the following should be global topics (not node-specific, hence "/<topic_name>")
@@ -203,11 +195,13 @@ def main():
 	# Main loop
 	while not rospy.is_shutdown():
 		if (mObj.nRB >= (mObj.Nd+mObj.Ne)):
-			mObj.checkEnemyCapture()
+			#mObj.checkEnemyCapture()
 			mObj.battle()
 			d_pub.publish(mObj.d_msg)
 			e_pub.publish(mObj.e_msg)
 			master_pub.publish(mObj.master_msg)
+		else:
+			rospy.logwarn('Length of received rigid bodies is less than expected number of agents %s.',mObj.nRB )
 
 		mObj.rate.sleep()
 
