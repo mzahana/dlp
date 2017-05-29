@@ -305,8 +305,8 @@ private:
 	*/
 	MatrixXi S;
 
-	int dcols_x; /**< grid resolution, in East(x), in [m]. */
-	int drows_y; /**< grid resolution, in North(y), in [m]. */
+	float dcols_x; /**< grid resolution, in East(x), in [m]. */
+	float drows_y; /**< grid resolution, in North(y), in [m]. */
 
 	/**
 	* Origin shifts in [m].
