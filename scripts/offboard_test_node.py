@@ -78,6 +78,12 @@ class Utils():
 		# step size multiplies joystick input
 		self.joy_FACTOR = 2.0
 
+		# Fence params
+		self.fence_x_min = rospy.get_param('fence_min_x', 0.0)
+		self.fence_x_max = rospy.get_param('fence_max_x', 5.0)
+		self.fence_y_min = rospy.get_param('fence_min_y', 0.0)
+		self.fence_y_max = rospy.get_param('fence_max_y', 5.0)
+
 		# flags
 		self.home_flag = False
 		self.takeoff_flag = False
@@ -128,8 +134,27 @@ class Utils():
 	def joy2setpoint(self):
 		x = -1.0*self.joy_msg.axes[0]
 		y = self.joy_msg.axes[1]
-		self.setp.position.x = self.local_pose.x + self.joy_FACTOR*x
-		self.setp.position.y = self.local_pose.y + self.joy_FACTOR*y
+		sp_x = self.local_pose.x + self.joy_FACTOR*x
+		sp_y = self.local_pose.y + self.joy_FACTOR*y
+		sp_x, sp_y = self.boundSp(sp_x, sp_y)
+		self.setp.position.x = sp_x
+		self.setp.position.y = sp_y
+
+	# should input the 'change' in setpoint 
+	def boundSp(self, dx, dy):
+		x = dx
+		y = dy
+		if x < self.fence_x_min:
+			x = self.fence_x_min
+		if x > self.fence_x_max:
+			x = self.fence_x_max
+		if y < self.fence_y_min:
+			y = self.fence_y_min
+		if y > self.fence_y_max:
+			y = self.fence_y_max
+
+		# x,y here are the setpoints directly
+		return (x,y)
 		
 
 
