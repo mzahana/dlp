@@ -569,18 +569,18 @@ int main(int argc, char **argv)
 
 		if (problem.DEBUG){
 			cout << "###################################################### \n" ;
-			cout << "I am agent: " << problem.get_myID() << "\n";
-			cout << "Problem solved in Total time= " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
-			cout << "attacker current locations: " << eloc.transpose()<< endl;
-			cout << "Defenders locations: " << dloc.transpose() << endl;
-			cout << "local planned transition: "<< problem.get_my_current_location()
+			cout << "[dlp_node] I am agent: " << problem.get_myID() << "\n";
+			cout << "[dlp_node] Problem solved in Total time= " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+			cout << "[dlp_node] attacker current locations: " << eloc.transpose()<< endl;
+			cout << "[dlp_node] Defenders locations: " << dloc.transpose() << endl;
+			cout << "[dlp_node] local planned transition: "<< problem.get_my_current_location()
 				<< " ---> "
 				<< problem.get_my_next_location()
 				<< "\n";
 			if (problem.get_N_sensed_neighbors() > 0)
-				cout << "Sensed Neighbors: " << sensedN.transpose() << "\n";
+				cout << "[dlp_node] Sensed Neighbors: " << sensedN.transpose() << "\n";
 			else
-				cout << "Sensed Neighbors: []" <<"\n";
+				cout << "[dlp_node] Sensed Neighbors: []" <<"\n";
 			cout << "###################################################### \n" ;
 		}
 
