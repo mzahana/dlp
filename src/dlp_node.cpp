@@ -414,6 +414,9 @@ int main(int argc, char **argv)
 			enu(2,0) = cb.d_loc_msg.defenders_position[i].z;
 			dloc(i,0) =problem.get_sector_from_ENU(enu);
 		}
+		if (problem.DEBUG)
+			cout << "[dlp_node] [loop] d_loc:  " << dloc.transpose() << "\n";
+
 		problem.set_d_current_locations(dloc);
 
 		// get enemy locations
@@ -424,6 +427,8 @@ int main(int argc, char **argv)
 			enu(2,0) = cb.e_loc_msg.enemy_position[i].z;
 			eloc(i,0) =problem.get_sector_from_ENU(enu);
 		}
+		if (problem.DEBUG)
+			cout << "[dlp_node] [loop] d_loc:  " << eloc.transpose() << "\n";
 		problem.set_e_current_locations(eloc);
 		
 		// set my current location
@@ -466,6 +471,8 @@ int main(int argc, char **argv)
 			problem.set_my_current_location(dloc(myID,0));
 		else
 			problem.set_my_current_location(problem.get_sector_from_ENU(enu));
+		if (problem.DEBUG)
+			cout << "[dlp_node] [loop] my current location:  " << problem.get_my_current_location() << "\n";
 
 		// test conversion from sector to ENU and vise versa
 		//enu = problem.get_ENU_from_sector(dloc(myID,0));

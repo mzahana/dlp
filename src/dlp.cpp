@@ -1152,8 +1152,8 @@ DLP::solve_simplex(){
 	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
 	if (DEBUG){
-		cout << " [solve_simplex] Simplex solver runs in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
-		cout << " [solve_simplex] obj value = " <<  glp_get_obj_val(lp) << endl;
+		cout << " [solve_simplex] Simplex solver executed in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << " [solve_simplex] objective value = " <<  glp_get_obj_val(lp) << endl;
 	}
 }
 
