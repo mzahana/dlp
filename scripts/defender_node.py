@@ -81,6 +81,7 @@ class Utils():
 		self.home_flag = False
 		self.takeoff_flag = False
 		self.land_flag = False
+		self.arm_flag = False
 		self.disarm_flag = False
 		self.battle_flag = False
 
@@ -130,6 +131,10 @@ class Utils():
 		if msg is not None:
 			self.land_flag = msg.data
 
+	def armCb(self, msg):
+		if msg is not None:
+			self.arm_flag = msg.data
+
 	def disarmCb(self, msg):
 		if msg is not None:
 			self.disarm_flag = msg.data
@@ -155,6 +160,7 @@ def main():
 	rospy.Subscriber('/home', Bool, cb.homeCb)
 	rospy.Subscriber('/takeoff', Bool, cb.takeoffCb)
 	rospy.Subscriber('/land', Bool, cb.landCb)
+	rospy.Subscriber('/arm', Bool, cb.armCb)
 	rospy.Subscriber('/disarm', Bool, cb.disarmCb)
 
 	setp_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=1)
@@ -209,6 +215,12 @@ def main():
 			rospy.logwarn('Defender %s: Landing', cb.my_id)
 			mode.setAutoLandMode()
 			break
+
+		if cb.arm_flag:
+			cb.battle_flag = False
+			cb.arm_flag = False
+			rospy.logwarn('Defender %s: Arming', cb.my_id)
+			mode.setArm()
 
 		if cb.disarm_flag:
 			cb.battle_flag = False
