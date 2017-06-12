@@ -7,14 +7,18 @@ myID: 0
 grid_size: [7,7]
 
 # sector size (x,y) in ENU, in meter(s)
-sector_size: [0.85, 0.85]
-#sector_size: [2, 2]
+# for hawrdware test
+#sector_size: [0.85, 0.85]
+# for simulation
+sector_size: [2, 2]
 
 # origin shifts (dx,dy) from (0,0) in ENU, in meter(s)
-origin_shifts: [3.0, 3.0]
-#origin_shifts: [0, 0]
+# for hardware experiment
+#origin_shifts: [3.0, 3.0]
+# for simulation
+origin_shifts: [0, 0]
 
-N_defenders: 1
+N_defenders: 3
 N_attackers: 1
 
 # count of base sectors
@@ -51,25 +55,31 @@ altitude_setpoint: 1.0
 enable_joystick: False
 
 # whether to use GPS or directly local_position coordinates
-use_gps: False
+# False for hardware test
+use_gps: True
 
 # whether to used simulated position, set True if using gazebo
-use_sim: False
+# False for hardware test
+use_sim: True
 
 # lat/long of zero position
 lat0: 47.397742
 long0: 8.5455933
 
-# fence
-#fence_min_x: 0
-#fence_max_x: 14.0
-#fence_min_y: 0.0
-#fence_max_y: 14.0
+# fence for simulation
+fence_min_x: 0
+fence_max_x: 14.0
+fence_min_y: 0.0
+fence_max_y: 14.0
 
-fence_min_x: -2.8
-fence_max_x: 2.8
-fence_min_y: -2.0
-fence_max_y: 2.2
+# for hardware test
+#fence_min_x: -2.8
+#fence_max_x: 2.8
+#fence_min_y: -2.0
+#fence_max_y: 2.2
 
 # attacker capture distance, [meter]
-capture_distance: 2.0
+# for hardware test
+#capture_distance: 1.2
+# for simulation
+capture_distance: 2.1
