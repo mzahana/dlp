@@ -31,6 +31,7 @@ class MasterC():
 		self.grid_size = rospy.get_param('grid_size')
 		self.sector_size = rospy.get_param('sector_size')
 		self.origin_shifts = rospy.get_param('origin_shifts')
+		self.Base = rospy.get_param('Base')
 
 		# capture distance, [m]
 		self.cap_dist = rospy.get_param('capture_distance', 1.0)
@@ -102,6 +103,7 @@ class MasterC():
 				self.e_msg.enemy_sectors[e] = self.enu2sector(p.x,p.y,p.z)
 
 			self.checkEnemyCapture()
+			#self.checkEnemyWin()
 
 	def enu2sector(self,x_enu,y_enu,z_enu):
 		nRows = self.grid_size[0]*1.0
@@ -173,6 +175,25 @@ class MasterC():
 				self.master_msg.allCaptured = True
 			else:
 				self.master_msg.allCaptured = False
+		else:
+			rospy.logwarn('Length of received rigid bodies is less than expected number of agents.')
+
+	# check if an enemy wins
+	def checkEnemyWin(self):
+		if self.posmsg_updated == False:
+			return
+
+		if (self.nRB >= (self.Nd+self.Ne)):
+			# exhaustive check
+			for e in range(self.Ne):
+				e_x = self.e_msg.enemy_position[e].x
+				e_y = self.e_msg.enemy_position[e].y
+				sector = self.enu2sector(e_x,e_y,0.)
+				self.master_msg.enemy_win = False
+				for b in self.Base:
+					if b == sector:
+						self.master_msg.enemy_win = True
+						break
 		else:
 			rospy.logwarn('Length of received rigid bodies is less than expected number of agents.')
 
