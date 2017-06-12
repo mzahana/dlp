@@ -1,0 +1,30 @@
+<launch>
+	<arg name="id" default="0"/>
+	<arg name="joy" default="False"/>
+	<arg name="ns" default="attacker_$(arg id)"/>
+
+	<arg name="fcu_url" default="/dev/ttyUSB0:921600" />
+	<arg name="gcs_url" default="" />
+	<arg name="tgt_system" default="1" />
+	<arg name="tgt_component" default="1" />
+
+
+	<include file="$(find dlp)/launch/mavros_ns.launch">
+		<arg name="fcu_url" value="$(arg fcu_url)" />
+		<arg name="gcs_url" default="$(arg gcs_url)" />
+		<arg name="tgt_system" default="$(arg tgt_system)" />
+		<arg name="tgt_component" default="$(arg tgt_component)" />
+		<arg name="log_output" default="screen" />
+		<arg name="ns" default="$(arg ns)"/>
+	</include>
+
+	<group ns="$(arg ns)">
+		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+
+		<param name="myID" type="int" value="$(arg id)" />
+		<param name="enable_joy" type="bool" value="$(arg joy)" />
+
+		<node pkg="dlp" type="attacker_node.py" name="attacker_node_$(arg id)"  required="true" output="screen">
+        	</node>
+	</group>
+</launch>
