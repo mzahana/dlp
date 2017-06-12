@@ -211,10 +211,17 @@ def main():
 			break
 		if cb.master_msg.gameEnd:
 			cb.battle_flag = False
-			rospy.logwarn('Time is up!')
-			rospy.logwarn('Defender %s: Landing', cb.my_id)
+			rospy.logwarn('Time is up! Defender %s: Landing', cb.my_id)
 			mode.setAutoLandMode()
 			break
+
+		'''
+		if cb.master_msg.enemy_win:
+			cb.battle_flag = False
+			rospy.logwarn('An enemy WON! Defender %s: Landing', cb.my_id)
+			mode.setAutoLandMode()
+			break
+		'''
 
 		if cb.arm_flag:
 			cb.battle_flag = False
