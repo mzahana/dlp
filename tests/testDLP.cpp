@@ -18,9 +18,9 @@ int main(){
 	problem.DEBUG = true;
 	int myID =2;// 0 is 1st agent
 	problem.set_myID(myID);
-	int Nd=3; int Ne = 2;
-	int rows=7; int cols=7;
-	int Tp=2;
+	int Nd=3; int Ne = 1;
+	int rows=10; int cols=10;
+	int Tp=3;
 
 	int nBaseref=3;
 	int nB=1;
@@ -48,13 +48,14 @@ int main(){
 
 	clock_t start, end;
 
-	m(0,0)=2.0; m(1,0)=8.0; m(2,0)=9.0;
+	m(0,0)=2.0; m(1,0)=11.0; m(2,0)=12.0;
 
 	problem.set_nCols(rows);
 	problem.set_nRows(cols);
 	problem.set_Tp(Tp);
 	problem.set_Nd(Nd);
 	problem.set_Ne(Ne);
+	problem.DEBUG = true;
 
 	// grid resolution
 	problem.set_grid_resolution(dx, dy);
@@ -63,7 +64,7 @@ int main(){
 
 	dloc(0,0)=15.0; dloc(1,0)=17.0; dloc(2,0)=19.0;
 
-	eloc(0,0)=28.0;eloc(1,0)=26.0;
+	eloc(0,0)=28.0;//eloc(1,0)=26.0;
 
 
 	problem.set_BaseRef(nBaseref, m);
