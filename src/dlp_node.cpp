@@ -329,6 +329,7 @@ int main(int argc, char **argv)
 	problem.set_weights(alpha, beta);
 
 	MatrixXf eloc(Ne,1);
+	MatrixXf e_predicted_loc(Ne,1);
 	MatrixXf dloc(Nd,1);
 
 	MatrixXf sensedN;
@@ -561,6 +562,16 @@ int main(int argc, char **argv)
 		}
 		else
 			my_state.sensed_neighbors.clear();
+
+		// set current sensed (and predicted) attackers locations
+		e_predicted_loc = problem.get_predicted_attackers_sectors();
+		my_state.sensed_attackers_locaitons.resize(Ne);
+		my_state.predicted_attackers_locations.resize(Ne);
+		for (int i=0; i<Ne; i++){
+			if (eloc(i,0)>0){
+				my_state.sensed_attackers_locaitons[i] = (int) eloc(i,0);
+			}	my_state.predicted_attackers_locations[i] = (int) e_predicted_loc(i,0);
+		}
 
 		my_state.execution_time_ms = (float)( (end-start)/( (clock_t)1000) );
 
