@@ -182,6 +182,17 @@ public:
 	float get_my_next_location();
 
 	/**
+	* Returns the estimated attackers trajectory (x_e[1]) at t=1.
+	* @return pointer to vector of predicted attackers state at t=1
+	*/
+	MatrixXf& get_xe1();
+
+	/** Finds the predicrted attackers sectors at t=1, from attackers predictred trajectory xe1
+	* @return pointer to verctor of predicted sector for each attacker
+	*/
+	MatrixXf& get_predicted_attackers_sectors();
+
+	/**
 	* Set grid resolution, in ENU.
 	* @param dx width of sector along X axis, in [meter].
 	* @param dy width of sector along Y axis, in [meter].
@@ -375,6 +386,14 @@ private:
 	* current attackers locations. Distributed problem.
 	*/
 	MatrixXf e_current_local_locations;
+	/** 
+	* Predicted attackers locations. Centralized Problem
+	*/
+	MatrixXf e_next_locations;
+	/** 
+	* Predicted attackers locations. Distributed Problem
+	*/
+	MatrixXf e_next_local_locations;
 
 	bool e_locIsSet; /**< flag for enemy location setting. */
 
@@ -419,6 +438,10 @@ private:
 	* Enemy initial state.
 	*/
 	MatrixXf xe0;
+	/**
+	* Estimated attackers state at t=1.
+	*/
+	MatrixXf xe1;
 	/**
 	* Enemy state trajectory over prediciotn horizon Tp
 	*/

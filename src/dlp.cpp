@@ -729,6 +729,45 @@ DLP::update_Xe(){
 }
 
 /**
+* Returns the estimated attackers trajectory (x_e[1]) at t=1.
+* @return pointer to vector of predicted attackers state at t=1
+*/
+MatrixXf&
+DLP::get_xe1(){
+	xe1 = MatrixXf::Constant(ns,1, 0.0);
+	xe1 = Xe.block(0,0,ns,1);
+	return xe1;
+}
+
+/** Finds the predicrted attackers sectors at t=1, from attackers predictred trajectory xe1
+* @return pointer to verctor of predicted sector for each attacker
+*/
+MatrixXf&
+DLP::get_predicted_attackers_sectors(){
+	assert(e_locIsSet);
+	e_next_locations = MatrixXf::Constant(Ne,1, 0.0);
+
+	for (int i=0; i<Ne; i++){
+		// get attacker's current sector location
+		float si = e_current_locations(i,0);
+		// get sector's neighbors
+		// result stored in neighbor_sectors
+		int N = get_NeighborSectors(si, 1);
+		// check which neighbor sector is assigned the highest prediction weight
+		int sj_maxw = 0;
+		for (int j=0; j<N; j++){
+			float sj = neighbor_sectors(j,0);
+			e_next_locations(i,0) = sj;
+			if (Xe(sj,0) > sj_maxw){
+				sj_maxw = Xe(sj,0); // not used for now!!
+				e_next_locations(i,0) = sj;
+			}
+		}
+	}
+	return e_next_locations;
+}
+
+/**
 * builds cost function's vector C, in min C.T*X
 */
 void
