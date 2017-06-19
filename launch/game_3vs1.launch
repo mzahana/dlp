@@ -4,6 +4,11 @@
 	<!-- attacker1 joystick enable -->
 	<arg name="a1_joy" default="False"/>
 	<arg name="a1_joy_dev" default="/dev/input/js0"/>
+	<arg name="record_bag" default="False"/>
+	<arg name="topics" default="/defenders_locations /enemy_locations /takeoff /defender1/dlp_state /defender2/dlp_state /defender3/dlp_state /battle /commander /defender1/mavros/extended_state /defender2/mavros/extended_state /defender3/mavros/extended_state /attacker1/mavros/extended_state /defender1/mavros/local_position/velocity /defender2/mavros/local_position/velocity /defender3/mavros/local_position/velocity /attacker1/mavros/local_position/velocity /defender1/mavros/state /defender2/mavros/state /defender3/mavros/state /attacker1/mavros/state"/>
+
+	<node pkg="rosbag" type="record" name="bag_recording" args="-o /home/abdkadma/ros_bags/zahana_game/simulated_game.bag $(arg topics)" required="true" if="$(arg record_bag)">
+	</node>
 
 	<!-- Launch defenders nodes-->
 	<!-- defender1 -->
