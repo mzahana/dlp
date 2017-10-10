@@ -142,6 +142,12 @@ public:
 	void set_weights(float a, float b);
 
 	/**
+	* Sets a provate boolean flag bLocalAttackerSensing.
+	* If true, only local attackers are seen. Otherwise, all attackers are considered.
+	*/
+	void set_local_attacker_sensing(bool flag);
+
+	/**
 	* Constructs Xref vector over Tp.
 	* Uses ns, BaseRefs, and Tp members to construct Xref
 	*/
@@ -215,7 +221,7 @@ public:
 
 	/**
 	* Update glpk problem.
-	* updates the objective vector, and constraints bounds based on X0, Xe
+	* updates the objective vector, and constraibLocalAttackerSensingnts bounds based on X0, Xe
 	*/
 	void update_LP();
 
@@ -269,6 +275,12 @@ public:
 	* @return pointer to vector of sensed neighbors.
 	*/
 	MatrixXf& get_sensed_neighbors();
+
+	/**
+	* Returns numbers of sensed attackers
+	* @return <int> number of sensed attackers.
+	*/
+	int get_N_local_attackers();
 
 	/**
 	* Returns neighbors' next locations.
@@ -349,6 +361,9 @@ private:
 	int N_sensed_neighbors; /**< number of sensed neighbors */
 	MatrixXf sensed_neighbors; /**< sectors location of sensed neighbors */
 
+	int N_local_attackers; /**< number of local sensed attackers*/
+	MatrixXf local_attackers; /**< sector locations of locally sensed attackers */
+
 	int Nd; /**< number of defenders. */
 	int Ne; /**< number of attackers. */
 
@@ -396,6 +411,11 @@ private:
 	MatrixXf e_next_local_locations;
 
 	bool e_locIsSet; /**< flag for enemy location setting. */
+
+	/**
+	* local attackers sensing flag.
+	*/
+	bool bLocalAttackerSensing;
 
 	/**
 	* next defenders locations.
@@ -592,6 +612,14 @@ private:
 	void setup_boundary_constraints();
 
 	/**
+	*  finds distance between 2 sectors.
+	* @param s1 1st sector
+	* @param s2 2nd sector
+	* @return distance
+	*/
+	float get_s2s_dist(int s1, int s2);
+
+	/**
 	*  finds minimum distance from a sector to base
 	* @param s input sector
 	* @return minimum distance to base
@@ -622,9 +650,14 @@ private:
 	void setup_optimization_vector();
 
 	/**
-	* sets up glpk problem
+	* sets up glpk global problem
 	*/
-	void setup_glpk_problem();
+	void setup_glpk_global_problem();
+
+	/**
+	* sets up glpk local_problem
+	*/
+	void setup_glpk_local_problem();
 
 	/**
 	* TODO
@@ -641,6 +674,14 @@ private:
 	* 1-step reachable sectors (based on dynamics)
 	*/
 	void sense_neighbors();
+
+	/**
+	* Simulates local attackers sensing.
+	* It selects attackers (from set of all atrackers) that belong to a local neighborhood.
+	* Sensing/local neighborhood is assumed to be 2 hops away, where 1 hop means reachable sectors per time step.
+	* updated variables: N_sensed_neighbors, sensed_neighbors
+	*/
+	void sense_local_attackers();
 };
 
 #endif

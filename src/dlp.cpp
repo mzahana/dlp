@@ -62,6 +62,8 @@ DLP::DLP()
 	d_current_locations(2,0)=7;
 	d_next_locations = d_current_locations;
 
+	bLocalAttackerSensing = false;
+
 	my_current_location = d_current_locations(myID,0);
 	my_next_location = my_current_location;
 
@@ -250,6 +252,17 @@ DLP::set_weights(float a, float b){
 }
 
 /**
+* Sets a provate boolean flag bLimitiedSensing.
+* If true, only local attackers are seen. Otherwise, all attackers are considered.
+* TODO: implement corresponding get_ function
+*/
+void
+DLP::set_local_attacker_sensing(bool flag){
+	bLocalAttackerSensing = flag;
+	return;
+}
+
+/**
 * gets defenders next location.
 * @param Dn pointer to array to return to.
 */
@@ -285,6 +298,15 @@ DLP::get_N_sensed_neighbors(){
 MatrixXf&
 DLP::get_sensed_neighbors(){
 	return sensed_neighbors;
+}
+
+/**
+* Returns numbers of sensed attackers
+* @return <int> number of sensed attackers.
+*/
+int
+DLP::get_N_local_attackers(){
+	return N_local_attackers;
 }
 
 /**
@@ -621,6 +643,32 @@ DLP::update_X0_dist(){
 }
 
 /**
+*  finds distance between 2 sectors.
+* @param s1 1st sector
+* @param s2 2nd sector
+* @return distance
+*/
+float
+DLP::get_s2s_dist(int s1, int s2){
+
+	/* Initialize distance */
+	float dist = 0.0;
+
+	/* sector 1 location in grid (row, column) */
+	MatrixXf s1_loc(2,1);
+	/* sector 2 location in grid (row, column) */
+	MatrixXf s2_loc(2,1);
+
+	/* compute xy locations of sectors */
+	get_sector_location(s1); s1_loc = sector_location;
+	get_sector_location(s2); s2_loc = sector_location;
+	/* compute distance */
+	dist = (s1_loc-s2_loc).norm();
+
+	return dist;
+}
+
+/**
 *  finds minimum distance from a sector to base
 * @param s input sector
 * @return minimum distance to base
@@ -714,11 +762,25 @@ DLP::update_Xe(){
 	// initialize vectors to zeros
 	xe0 = MatrixXf::Constant(ns,1, 0.0);
 
-	int loc=0;
-	// fill xe0: one time step
-	for (int s=0; s< Ne; s++){
-		loc=e_current_locations(s,0)-1; // -1 coz c++ starts at 0
-		xe0(loc,0)=1.0;
+	/* Local vs. global attackers sensing */
+	if (bLocalAttackerSensing){	// local
+		sense_local_attackers();
+		if (N_local_attackers > 0){
+			int loc=0;
+			// fill xe0: one time step
+			for (int s=0; s< N_local_attackers; s++){
+				loc=local_attackers(s,0)-1; // -1 coz c++ starts at 0
+				xe0(loc,0)=1.0;
+			}
+		}
+	}
+	else{											// global
+		int loc=0;
+		// fill xe0: one time step
+		for (int s=0; s< Ne; s++){
+			loc=e_current_locations(s,0)-1; // -1 coz c++ starts at 0
+			xe0(loc,0)=1.0;
+		}
 	}
 
 	// update Xe
@@ -787,10 +849,93 @@ DLP::setup_optimization_vector(){
 }
 
 /**
-* sets up glpk problem
+* sets up glpk global problem
 */
 void
-DLP::setup_glpk_problem(){
+DLP::setup_glpk_global_problem(){
+	/*
+	* **NOTE**: creating the problem object in each run BLOWS up the memory!!
+	* Use glp_erase_prob(lp) instead
+	*/
+	//lp = glp_create_prob();
+	glp_erase_prob(lp);
+	glp_set_obj_dir(lp, GLP_MIN);
+	//calculate total number of constraints
+	int nEq = ns*Tp; /* number of Eq constraints. */
+	int nIneq = ns*Tp; /* number of Ineq constraints */
+	int nConst = 2*ns*Tp + 2*(ns+nu)*Tp;
+	glp_add_rows(lp, nEq+nIneq);
+	glp_add_cols(lp, (ns+nu)*Tp);
+
+	/* NOTE: glpk indexing starts from 1 */
+
+	// set equality/dynamics constraints
+	for (int i=0; i<nEq; i++){
+		glp_set_row_bnds(lp, i+1, GLP_FX, X0(i,0), X0(i,0));
+	}
+
+	// set inequality/flow constraints
+	for (int i=0; i<nIneq; i++){
+		int j = i+nEq; /* add after equalities */
+		glp_set_row_bnds(lp, j+1, GLP_UP, 0.0, X0(i,0));
+	}
+
+	// set box constraints and objective vector
+	for (int i=0; i<(ns+nu)*Tp; i++){
+		glp_set_col_bnds(lp, i+1, GLP_DB, 0.0, 1.0);
+		glp_set_obj_coef(lp, i+1, C(i,0));
+	}
+
+	/** load contraints matrix.
+	* in glpk, constraints matrix does not include box constraints.
+	* in this implementation, it contains dynamics and flow constraints only.
+	*/
+	// number of nonzero values
+	int nnzEq = Ad_s.nonZeros();
+	int nnzIneq = Af_s.nonZeros();
+
+	int ia[1+nnzEq+nnzIneq], ja[1+nnzEq+nnzIneq];
+	double ar[1+nnzEq+nnzIneq];
+	int ct=0; /* counter */
+	// fill nonzero elements of equality const.
+	for (int k=0; k<Ad_s.outerSize(); ++k){
+		for (SparseMatrix<float>::InnerIterator it1(Ad_s,k); it1; ++it1)
+		{
+			ia[ct+1] =it1.row()+1; ja[ct+1] =it1.col()+1; ar[ct+1] =it1.value();
+			ct++;
+		}
+	}
+
+
+	// fill nonzero elements of inequality const.
+	for (int k=0; k<Af_s.outerSize(); ++k){
+		for (SparseMatrix<float>::InnerIterator it2(Af_s,k); it2; ++it2)
+		{
+			ia[ct+1] =it2.row()+nEq+1; ja[ct+1] =it2.col()+1; ar[ct+1] =it2.value();
+			ct++;
+		}
+	}
+
+
+	/*
+	for (int i=0; i<collision_set.size(); i++){
+		ia[nnzEq+nnzIneq-i] = 2*ns*Tp+1;
+		ja[nnzEq+nnzIneq-i] = collision_set(i,0);
+		ar[nnzEq+nnzIneq-i] = 1.0;
+	}
+	*/
+
+
+	// check if matrix is correct
+	//int chk= glp_check_dup(nEq+nIneq, (ns+nu)*Tp, nnzEq+nnzIneq, ia, ja);
+	glp_load_matrix(lp, nnzEq+nnzIneq, ia, ja, ar);
+}
+
+/**
+* sets up glpk local problem
+*/
+void
+DLP::setup_glpk_local_problem(){
 	/*
 	* **NOTE**: creating the problem object in each run BLOWS up the memory!!
 	* Use glp_erase_prob(lp) instead
@@ -1025,6 +1170,67 @@ DLP::sense_neighbors(){
 }
 
 /**
+* Simulates local attackers sensing.
+* It selects attackers (from set of all atrackers) that belong to a local neighborhood.
+* Sensing/local neighborhood is assumed to be 2 hops away, where 1 hop means reachable sectors per time step.
+* updated variables: N_local_attackers, local_attackers
+*/
+void
+DLP::sense_local_attackers(){
+
+	/* radius of sensing; 2 hops */
+	int L =2*Nr;
+	/* get the set of neighbor sectors that are 2 hops away */
+	int N =DLP::get_NeighborSectors(my_current_location,L);
+	/* C array of set of neighbors, myself included*/
+	float *N_set;
+
+	N_set = neighbor_sectors.data();
+
+	// get attackers sectors
+	float *attackers_set; /* C array */
+	int k=0;
+
+	attackers_set = e_current_locations.data();
+
+	/* vector which stores intersection set */
+	std::vector<int>::iterator it;
+	vector<int> intersection_set(Nd);
+
+	/* sort, for faster intersection operation */
+	sort(N_set, N_set+N);
+	sort(attackers_set, attackers_set+Ne);
+
+	/* perform set intersection */
+	it=std::set_intersection (N_set, N_set+N, attackers_set, attackers_set+Ne, intersection_set.begin());
+  intersection_set.resize(it-intersection_set.begin());
+	N_local_attackers = intersection_set.size();
+	/* fill local_attackers matrix */
+	if (N_local_attackers>0){
+		// initialize the size
+		local_attackers = MatrixXf::Constant(N_local_attackers,1,0.0);
+		// fill
+		for (int i=0; i<N_local_attackers; i++){
+			local_attackers(i,0)=intersection_set[i];
+		}
+	}
+	if (DEBUG){
+		cout << "############################################# \n";
+		cout << "[sense_local_attackers] mycurrent location: " << my_current_location << "\n";
+		cout << "[sense_local_attackers] Current neighbor sectors: " << neighbor_sectors.transpose() << "\n";
+		cout << "[sense_local_attackers] number of local attackers: " << N_local_attackers << "\n";
+		cout << "[sense_local_attackers] Current attackers locations: " <<  e_current_locations.transpose() << "\n";
+		if (N_local_attackers>0){
+			cout << "[sense_local_attackers] Local attackers: "<< local_attackers.transpose() << "\n";
+		}else{
+			cout << "[sense_local_attackers] No local attacker(s) inside the sensed area." << "\n";
+		}
+		cout << "############################################# \n";
+	}
+
+}
+
+/**
 * Update glpk problem. This is the centralized versoin.
 * Updates the objective vector, and constraints bounds based on X0, Xe
 */
@@ -1050,22 +1256,10 @@ DLP::update_LP(){
 	if (DEBUG)
 		cout << "[update_LP] optimization vector, C,  is updated \n";
 
-	/* NOTE: glpk indexing starts from 1 */
-
-	// set equality/dynamics constraints
-	for (int i=0; i<nEq; i++){
-		glp_set_row_bnds(lp, i+1, GLP_FX, X0(i,0), X0(i,0));
-	}
-	// set inequality/flow constraints
-	for (int i=0; i<nIneq; i++){
-		int j = i+nEq; /* add after equalities */
-		glp_set_row_bnds(lp, j+1, GLP_UP, X0(i,0), X0(i,0));
-	}
-
-	// set objective vector
-	for (int i=0; i<(ns+nu)*Tp; i++){
-		glp_set_obj_coef(lp, i+1, C(i,0));
-	}
+	/* update glpk problem */
+	DLP::setup_glpk_global_problem();
+	if (DEBUG)
+		cout << "[update_LP] glpk global problem is updated \n";
 	end = clock();
 	if (DEBUG){
 		cout << " [update_LP] Problem updated in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
@@ -1107,7 +1301,7 @@ DLP::update_LP_dist(){
 
 
 	/* NOTE: glpk indexing starts from 1 */
-	DLP::setup_glpk_problem();
+	DLP::setup_glpk_local_problem();
 	if (DEBUG)
 		cout << "[update_LP_dist] glpk problem is updated \n";
 
@@ -1163,7 +1357,7 @@ DLP::setup_problem(){
 	DLP::update_Xe();
 	DLP::setup_optimization_vector();
 
-	DLP::setup_glpk_problem();
+	DLP::setup_glpk_local_problem();
 //	high_resolution_clock::time_point t2 = high_resolution_clock::now();
 //	auto duration = duration_cast<microseconds>( t2 - t1 ).count();
 //	cout << "Setup is done in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
