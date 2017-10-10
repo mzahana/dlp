@@ -12,7 +12,7 @@ TEST_DLP := testDLP
 TEST_EIG := testEigen
 TEST_MATHSET := testMathSet
 TEST_COLLISION := exhaustiveCollisionTest
-
+TEST_GEN_DATA := generate_data
 SRCEXT := cpp
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
@@ -22,7 +22,7 @@ INC := -I include/* -I eigen-3.3.3
 
 # build all
 .PHONY: all
-all : msg $(TEST_DLP)  $(TEST_EIG) $(TEST_MATHSET) $(TEST_COLLISION)
+all : msg $(TEST_DLP)  $(TEST_EIG) $(TEST_MATHSET) $(TEST_COLLISION) $(TEST_GEN_DATA)
 msg:
 	@echo "################## Building all test files ##################"
 
@@ -64,7 +64,14 @@ $(TEST_COLLISION): $(BUILDDIR)/dlp.o $(BUILDDIR)/exhaustiveCollisionTest.o
 $(BUILDDIR)/exhaustiveCollisionTest.o: $(TESTDIR)/exhaustiveCollisionTest.cpp
 	@mkdir -p $(BUILDDIR)
 	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
-
+# generate_date
+$(TEST_GEN_DATA): $(BUILDDIR)/dlp.o $(BUILDDIR)/generate_data.o
+	@echo " Linking..."
+	@mkdir -p $(BIN)
+	@echo " $(CC) $^ -o $(BIN)/$(TEST_GEN_DATA) $(LIB)"; $(CC) $^ -o $(BIN)/$(TEST_GEN_DATA) $(LIB)
+$(BUILDDIR)/generate_data.o: $(TESTDIR)/generate_data.cpp
+	@mkdir -p $(BUILDDIR)
+	@echo " $(CC) $(CFLAGS) $(INC) -c -o $@ $<"; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
 
 .PHONY: clean
