@@ -38,6 +38,7 @@ Nd, Ne = 5,5
 
 mismatchN= range(0,Nd)
 percentage = [0]*Nd
+exact_match_ind=[] # indices of smaples correspond ot exact match
 # find percentage of exact match among all samples
 counter = 0.
 for s in range(0,Nsamples):
@@ -46,10 +47,23 @@ for s in range(0,Nsamples):
 	local = localSol[s,:]
 	#print cent, '--', local
 	if (sum(cent == local) > (Nd-1)):
+		exact_match_ind.append(s)
 		counter = counter +1.
 # %
 print 'percentage of exact match = ', counter/Nsamples*100.
 percentage[0] = counter/Nsamples*100.
+
+# neighborhood  matrices
+Nh_d = []
+Nh_a = []
+for i in range(0,Nd):
+	Nh_d.append([0]*int(counter))
+	Nh_a.append([0]*int(counter))
+
+for i in range(0,Nd):
+	for j in range(0,int(counter)):
+		Nh_d[i][j]=localNeighors[exact_match_ind[j], i]
+		Nh_a[i][j]=localAttackers[exact_match_ind[j], i]
 
 # find different mismatch %
 for i in range(1,Nd):
@@ -66,15 +80,31 @@ for i in range(1,Nd):
 	percentage[i]=counter/Nsamples*100.
 fig = plt.figure()
 fig.suptitle('Centralized Vs. Local solutions\n(5 vs. 5) in 10x10 grid', fontsize=14, fontweight='bold')
-ax = fig.add_subplot(111)
+ax1 = fig.add_subplot(221)
+ax2 = fig.add_subplot(222)
+ax3 = fig.add_subplot(223)
 fig.subplots_adjust(top=0.85)
-ax.set_title('Mismatch percentage')
+ax1.set_title('Mismatch percentage')
 
-ax.set_xlabel('Number of Mismatch')
-ax.set_ylabel('Percentage %')
+ax1.set_xlabel('Number of Mismatch')
+ax1.set_ylabel('Percentage %')
 
-ax.plot(mismatchN, percentage, 'ro')
-ax.axis([0, 6, 0, 100])
+ax1.plot(mismatchN, percentage, 'ro')
+ax1.axis([0, 6, 0, 100])
+
+#ax2
+ax2.set_title('Neighborhood size(defenders) for exact match')
+for p in range(0,Nd):
+	ax2.plot(Nh_d[p][:],'o')
+ax2.set_xlabel('sample number')
+ax2.set_ylabel('number of local defenders')
+
+#ax3
+ax3.set_title('Neighborhood size(attackers) for exact match')
+for p in range(0,Nd):
+	ax3.plot(Nh_a[p][:],'o')
+ax3.set_xlabel('sample number')
+ax3.set_ylabel('number of local attackers')
 
 plt.show()
 
