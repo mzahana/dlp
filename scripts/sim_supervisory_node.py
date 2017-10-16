@@ -7,6 +7,7 @@ from gazebo_msgs.msg  import ModelStates
 from geometry_msgs.msg import Point, Point32, PoseStamped, Quaternion, Pose
 from sensor_msgs.msg import NavSatFix
 from dlp.msg import DefendersState, EnemyState, MasterCommand
+from math import sqrt, ceil
 import helpers as hp
 
 '''
