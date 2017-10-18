@@ -5,7 +5,7 @@ from numpy import array
 from std_msgs.msg import *
 from sensor_msgs.msg import Joy, NavSatFix
 from geometry_msgs.msg import Point, Point32, PoseStamped, Quaternion
-from dlp.msg import DefendersState, EnemyState, MasterCommand
+from dlp.msg import DefendersState, EnemyState, MasterCommand, DlpState
 from mavros_msgs.msg import *
 from mavros_msgs.srv import *
 import helpers as hp
@@ -77,6 +77,7 @@ class Utils():
 		self.d_msg = DefendersState()
 		self.e_msg = EnemyState()
 		self.master_msg = MasterCommand()
+		self.dlp_msg = DlpState()
 		self.local_pose = Point(0.0, 0.0, 0.0)
 		self.joy_msg = Joy()
 		self.joy_msg.axes=[0.0, 0.0, 0.0]
@@ -132,6 +133,11 @@ class Utils():
 		self.setp.position.z = self.altSp
 
 	# Callbacks
+	def dlpCb(self, msg):
+		if msg is not None:
+			self.dlp_msg = msg
+			self.my_id = self.dlp_msg.my_id 
+
 	def dCb(self, msg):
 		if msg is not None:
 			self.d_msg = msg
@@ -262,6 +268,7 @@ def main():
 	rospy.Subscriber('/arm', Bool, cb.armCb)
 	rospy.Subscriber('/disarm', Bool, cb.disarmCb)
 	rospy.Subscriber('joy', Joy, cb.joyCb)
+	rospy.Subscriber('dlp_state', DlpState, cb.dlpCb)
 
 	# publishers
 	setp_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=1)
@@ -269,6 +276,9 @@ def main():
 	# ros loop rate
 	freq = rospy.get_param('update_freq',50.0)
 	rate = rospy.Rate(freq)
+
+	# attack mode. False: joystick(default); True: LP algorithm
+	auto_attack = rospy.get_param("auto_attack", False)
 
 
 	# Main loop
@@ -302,6 +312,12 @@ def main():
 		elif cb.battle_flag:
 			if rospy.get_param('enable_joy', False):
 				cb.joy2setpoint()
+			elif auto_attack:
+				# TODO get setpoint from LP algorithm
+				cb.setp.position.x = cb.dlp_msg.my_next_local_position.x
+				cb.setp.position.y = cb.dlp_msg.my_next_local_position.y
+				cb.setp.position.z = cb.altSp
+
 
 		if rospy.get_param('enable_joy', False):
 			cb.joy2setpoint()
