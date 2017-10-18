@@ -13,48 +13,57 @@
 	<!-- Launch defenders nodes-->
 	<!-- defender1 -->
 	<group ns="defender1">
+
 		<arg name="id" default="0"/>
 		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
 		<param name="myID" type="int" value="$(arg id)" />
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
-        	</node>
+    </node>
 		<node pkg="dlp" type="defender_node.py" name="defender_node_$(arg id)"  required="true" output="screen">
-        	</node>
+    </node>
+
 	</group>
 
 	<!-- defender2 -->
 	<group ns="defender2">
+
 		<arg name="id" default="1"/>
 		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
 		<param name="myID" type="int" value="$(arg id)" />
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
-        	</node>
+    </node>
 		<node pkg="dlp" type="defender_node.py" name="defender_node_$(arg id)"  required="true" output="screen">
-        	</node>
+    </node>
+
 	</group>
 
 	<!-- defender3 -->
 	<group ns="defender3">
+
 		<arg name="id" default="2"/>
 		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
 		<param name="myID" type="int" value="$(arg id)" />
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
-        	</node>
+    </node>
 		<node pkg="dlp" type="defender_node.py" name="defender_node_$(arg id)"  required="true" output="screen">
-        	</node>
+    </node>
+
 	</group>
 
 	<!-- launch attackers nodes -->
 	<!-- attacker1 -->
 	<group ns="attacker1">
+
 		<arg name="id" default="0"/>
 
 		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
 
 		<param name="myID" type="int" value="$(arg id)" />
+		<param name="debug" value="true" />
+		<param name="alpha" value="0.99" />
 		<param name="enable_joy" type="bool" value="$(arg a1_joy)" />
 
 		<node pkg="joy" type="joy_node" name="joy_$(arg id)"  required="true" output="screen" if="$(arg a1_joy)">
@@ -62,7 +71,11 @@
 		</node>
 
 		<node pkg="dlp" type="attacker_node.py" name="attacker_node_$(arg id)"  required="true" output="screen">
-        	</node>
+    </node>
+
+		<node pkg="dlp" type="dlp_node_attacking" name="dlp_node_attacking"  required="true" output="screen">
+    </node>
+
 	</group>
 
 </launch>
