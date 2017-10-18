@@ -83,3 +83,7 @@ fence_max_y: 14.0
 #capture_distance: 1.2
 # for simulation
 capture_distance: 2.1
+
+# if true, use algorithm to compute attack plan
+# otherwise, joystick is expected to be used
+auto_attack: true
