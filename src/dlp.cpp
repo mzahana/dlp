@@ -23,7 +23,9 @@
 */
 DLP::DLP()
 {
-	// Default initilization!
+	/* Default initilization! */
+
+	DEFENDER_SIDE = true;
 	myID =1;
 
 	DEBUG = false;
@@ -82,6 +84,20 @@ DLP::~DLP()
 {
 	// some cleaning!
 	glp_delete_prob(lp);
+}
+
+/** Set defender vs. atatcker side.
+* @param f true if playing as defenders. Otherwise, it's false
+*/
+void
+DLP::set_defender_side(bool f){
+	DEFENDER_SIDE = f;
+	// make sure that Tp=1 in attacker mode
+	if (not DEFENDER_SIDE)
+		Tp=1;
+
+	if (DEBUG)
+		printf("[%s]: Tp forced to 1 in attacker mode.\n", __FUNCTION__);
 }
 
 /**
@@ -237,7 +253,11 @@ DLP::set_Tgame(float t){
 */
 void
 DLP::set_Tp(int t){
-	Tp = t;
+
+	if (not DEFENDER_SIDE)
+		Tp = 1;
+	else
+		Tp = t;
 	return;
 }
 /**
@@ -323,6 +343,8 @@ DLP::get_neighbor_next_locations(){
 */
 void
 DLP::setup_gridMatrix(){
+	if (DEBUG)
+		printf("[%s]: Setting up grid matrix...\n",__FUNCTION__);
 	// initialize
 	S = MatrixXi::Constant(nRows, nCols, 0);
 	int s=1;
@@ -333,7 +355,8 @@ DLP::setup_gridMatrix(){
 			s++;
 		}
 	}
-
+	if(DEBUG)
+		printf("[%s]: Done setting up grid matrix.\n",__FUNCTION__);
 	return;
 }
 /**
@@ -434,6 +457,9 @@ DLP::get_NeighborSectors(int s, int L){
 */
 void
 DLP::setup_input_matrix(){
+
+	if(DEBUG)
+		printf("[%s]: Setting up input matrix B.\n",__FUNCTION__);
 	// initialize input matirces
 	Bout	= MatrixXf::Constant(ns,nu,0.0);
 	B		= MatrixXf::Constant(ns,nu,0.0);
@@ -478,6 +504,8 @@ DLP::setup_input_matrix(){
 */
 void
 DLP::setup_dynamics_constraints(){
+	if (DEBUG)
+		printf("[%s]: Setting up dynamics constraints...\n", __FUNCTION__);
 	// inititalise matrices
 	MatrixXf Tu = MatrixXf::Constant(ns*Tp, nu*Tp, 0.0);
 	Adynmics = MatrixXf::Constant(ns*Tp, (ns+nu)*Tp,0.0);
@@ -498,6 +526,9 @@ DLP::setup_dynamics_constraints(){
 	Adynmics.block(0,ns*Tp,ns*Tp,nu*Tp)=-1.0*Tu;
 	Ad_s = Adynmics.sparseView();
 
+	if (DEBUG)
+		printf("[%s]: Done setting up dynamics constraints.\n", __FUNCTION__);
+
 	return;
 }
 /**
@@ -505,6 +536,8 @@ DLP::setup_dynamics_constraints(){
 */
 void
 DLP::setup_flow_constraints(){
+	if (DEBUG)
+		printf("[%s]: Setting up flow constraints...\n", __FUNCTION__);
 	// inititalise matrices
 	MatrixXf Tu_c = MatrixXf::Constant(ns*Tp, nu*Tp, 0.0);
 	Aflow = MatrixXf::Constant(ns*Tp, (ns+nu)*Tp,0.0);
@@ -529,6 +562,9 @@ DLP::setup_flow_constraints(){
 	Aflow.block(0,0,ns*Tp,ns*Tp) = MatrixXf::Zero(ns*Tp,ns*Tp);
 	Aflow.block(0,ns*Tp,ns*Tp,nu*Tp)=Tu_c;
 	Af_s = Aflow.sparseView();
+
+	if (DEBUG)
+		printf("[%s]: Done setting up flow constraints.\n", __FUNCTION__);
 	return;
 }
 
@@ -560,6 +596,8 @@ DLP::setup_boundary_constraints(){
 */
 void
 DLP::set_Xref(){
+	if (DEBUG)
+		printf("[%s]: Setting Xref...\n", __FUNCTION__);
 	// initialize vectors to zeros
 	xref = MatrixXf::Constant(ns,1, 0.0);
 	Xref = MatrixXf::Constant(ns*Tp,1, 0.0);
@@ -577,6 +615,9 @@ DLP::set_Xref(){
 	}
 
 	XrefIsSet = true;
+
+	if (DEBUG)
+		printf("[%s]: Done setting Xref.\n", __FUNCTION__);
 	return;
 }
 /**
@@ -585,6 +626,8 @@ DLP::set_Xref(){
 */
 void
 DLP::update_X0(){
+	if(DEBUG)
+		printf("[%s]: Updating global X0...\n", __FUNCTION__);
 	// initialize vectors to zeros
 	x0 = MatrixXf::Constant(ns,1, 0.0);
 	X0 = MatrixXf::Constant(ns*Tp,1, 0.0);
@@ -601,6 +644,10 @@ DLP::update_X0(){
 			X0((t+1)*ns-ns+loc,0)=1.0;
 		}
 	}
+
+	if (DEBUG)
+		printf("[%s]: Done updating global X0.\n", __FUNCTION__);
+
 	return;
 }
 
@@ -610,6 +657,8 @@ DLP::update_X0(){
 */
 void
 DLP::update_X0_dist(){
+	if (DEBUG)
+		printf("[%s]: Updating local X0...\n",__FUNCTION__);
 	// initialize vectors to zeros
 	x0 = MatrixXf::Constant(ns,1, 0.0);
 	X0 = MatrixXf::Constant(ns*Tp,1, 0.0);
@@ -639,6 +688,8 @@ DLP::update_X0_dist(){
 		X0((t+1)*ns-ns+my_current_location-1,0)=1.0;
 	}
 
+	if (DEBUG)
+		printf("[%s]: Done updating local X0.\n", __FUNCTION__);
 	return;
 }
 
@@ -699,7 +750,7 @@ DLP::get_min_dist_to_base(int s){
 /**
 * computes the sum of min distances to base of neighbors of s_i
 * inlcluding s_i.
-* @param sector s_i
+* @param s_i sector
 */
 float
 DLP::get_sum_min_distance(int s){
@@ -719,6 +770,9 @@ DLP::get_sum_min_distance(int s){
 */
 void
 DLP::setup_enemy_feedback_matrix(){
+	if (DEBUG)
+		printf("[%s]: Setting up enemy feedback matrix...\n", __FUNCTION__);
+
 	/* define feedback G matrix. see Eq 5 in implementation notes. */
 	MatrixXf G(nu,ns);
 	G = MatrixXf::Constant(nu,ns, 0.0);
@@ -729,6 +783,8 @@ DLP::setup_enemy_feedback_matrix(){
 	int sj=0; /* variable to store neighbor sector number */
 	float sum_min_dist=0; /* for s_i neighbors' min distance to base */
 	float min_dist_sj = 0; /* for s_i min distance to base */
+	float prob; // probabilty of a move
+	float cumm_probs; // cummulative probabilty
 
 	/* fill G non-zero entries */
 	for (int i=0; i <ns; i++){
@@ -736,12 +792,18 @@ DLP::setup_enemy_feedback_matrix(){
 		N = DLP::get_NeighborSectors(si);
 		sum_min_dist = DLP::get_sum_min_distance(si);
 		// loop over neighbors, ot fill g_{s_i -> s_j}
+		prob = 0.0; cumm_probs = 0.0;
 		for (int j=0; j<N; j++){
 			sj = neighbor_sectors(j,0);
 			/* comput g_{s_i -> s_j} */
 			min_dist_sj = DLP::get_min_dist_to_base(sj);
-			G(si*ns-ns + (sj-1), si-1) =(sum_min_dist - min_dist_sj) / ((float)N *sum_min_dist);
+			prob =(sum_min_dist - min_dist_sj) / ((float)N *sum_min_dist);
+			G(si*ns-ns + (sj-1), si-1) = prob;
+			cumm_probs += prob;
 		}
+		/* compute probability of g(si->si) = 1- others*/
+		G(si*ns-ns + (si-1), si-1)  =1.0 - cumm_probs;
+
 	} /* Done with G matrix */
 
 	/* build (I + BG) blocks! */
@@ -750,6 +812,10 @@ DLP::setup_enemy_feedback_matrix(){
 		T_G.block(i*ns,0,ns,ns) = temp_matrix;
 		temp_matrix *= temp_matrix;
 	}
+
+	if (DEBUG)
+		printf("[%s]: Done setting up enemy feedback matrix.\n", __FUNCTION__);
+
 	return;
 }
 
@@ -758,6 +824,9 @@ DLP::setup_enemy_feedback_matrix(){
 */
 void
 DLP::update_Xe(){
+	if (DEBUG)
+		printf("[%s]: Updating Xe...\n", __FUNCTION__);
+
 	assert(e_locIsSet);
 	// initialize vectors to zeros
 	xe0 = MatrixXf::Constant(ns,1, 0.0);
@@ -785,8 +854,14 @@ DLP::update_Xe(){
 
 	// update Xe
 	Xe = MatrixXf::Constant(ns*Tp,1, 0.0);
+	/* in attacker mode we should recompute T_G at each time step */
+	if (not DEFENDER_SIDE)
+		DLP::setup_defenders_feedback_matrix();
 	Xe = T_G*xe0;
 	XeIsSet = true;
+
+	if (DEBUG)
+		printf("[%s]: Done updating Xe.\n", __FUNCTION__);
 	return;
 }
 
@@ -830,10 +905,122 @@ DLP::get_predicted_attackers_sectors(){
 }
 
 /**
+* Calculates a feedback matrix which is used to estimate defenders future locations
+* from attackers prespective.
+* Steps:
+* 	- using current defenders and attackers locations
+*		- find most probably next locations of attackers
+*		- find the min distances between neighborhood locations of defenders and next locations of attacketrs
+*		- fill G matrix for one-time step
+*/
+void
+DLP::setup_defenders_feedback_matrix(){
+	if (DEBUG)
+		printf("[%s]: Setting up defenders feedback matrix...\n", __FUNCTION__);
+
+	/* NOTE: It is assumed that prediction time Tp=1 for attackers path planning */
+
+	/* NOTE: important to note that defenders andd attackers are switched w.r.t attackers side
+	* i.e d_current_locations replace e_current_locations and vice versa.
+	* Sorry for that, but it's a quick fix for now.
+	*/
+
+	/* initializations */
+	int N; // number of 1-time step neighbor sectors
+	float sum_min_dist; // sum of all min distances of a sector & its neighbors to the base
+	int a_loc, d_loc; // current attacker/defender locations
+	float prob; // probabilty to move to a sector
+	float cumm_prob; // cummulative sum of probs
+	int sa_maxw; // attacker sector with most probable move
+	float max_prob; // highest probabilty
+	MatrixXf G(nu,ns);
+	G = MatrixXf::Constant(nu,ns, 0.0);
+
+	/* loop over all attackers */
+	for (int a=0; a<Nd; a++){
+
+		// attacker's location. Notice the switch. We are using d_current_locations
+		a_loc = d_current_locations(a,0);
+
+		/* find most probably location of attacker */
+		// 1- compute probabilty to move to neighbor location based on distance to base
+		N = DLP::get_NeighborSectors(a_loc);
+		sum_min_dist = DLP::get_sum_min_distance(a_loc);
+
+		/** compute probabilities of moves to neighbor sectors
+		* select the sector which is assigned the highest prediction weight
+		*/
+		prob = 0.0; // probabilty to move to a sector
+		cumm_prob = 0.0; // cummulative sum of probs
+		sa_maxw = a_loc; // attacker sector with most probable move
+		max_prob = 0.0; // highest probabilty
+	
+		for (int j=0; j<N; j++){
+			int sj = neighbor_sectors(j,0);
+			float min_dist_sj = DLP::get_min_dist_to_base(sj);
+			prob =(sum_min_dist - min_dist_sj) / ((float)N *sum_min_dist);
+			cumm_prob += prob;
+			if (prob > max_prob){
+				max_prob  = prob;
+				sa_maxw = sj;
+			}
+		}
+		// probability of staying in the same sector
+		prob = 1- cumm_prob;
+		// check if staying is the most probable move
+		if (prob > max_prob){
+			max_prob = prob;
+			sa_maxw = a_loc;
+		}
+		/* Now we got the most probable move of this attacker from defenders point of view, sa_maxw */
+		
+		/* Compute the probabilities of defenders next moves and store them in the G feedback matrix 
+		* Notice that we are looping over Ns NOT Nd, because we are  playing from attackers point of view!
+		*/
+		for (int d=0; d<Ne; d++){
+			d_loc = e_current_locations(d,0);
+			N = DLP::get_NeighborSectors(d_loc);
+
+			// sum of defender's neighbors distances to attackers expected locations
+			sum_min_dist = 0.0;
+			for (int j=0; j<N; j++)
+				sum_min_dist += DLP::get_s2s_dist(neighbor_sectors(j,0), sa_maxw);
+
+			// loop over neighbors, to fill g_{s_i -> s_j}
+			prob = 0.0;
+			cumm_prob = 0.0;
+			for (int j=0; j<N; j++){
+				int sj = neighbor_sectors(j,0);
+				/* comput g_{s_i -> s_j} */
+				float dist_to_sj = DLP::get_s2s_dist(sj, sa_maxw);
+				prob =(sum_min_dist - dist_to_sj) / ((float)N *sum_min_dist);
+				G(d_loc*ns-ns + (sj-1), d_loc-1) = prob;
+				cumm_prob += prob;
+			}
+			/* compute probability of staying */
+			G(d_loc*ns-ns + (d_loc-1), d_loc-1)  = 1.0- cumm_prob;
+		}
+		/* Done with the G matrix */
+
+		/* compute transition matrix (I + BG) . ONLY for 1 time step*/
+		T_G = MatrixXf::Identity(ns, ns) + B*G;
+	}
+
+	if (DEBUG)
+		printf("[%s]: Done setting up defenders feedback matrix.\n", __FUNCTION__);
+	
+	return;
+}
+
+
+/**
 * builds cost function's vector C, in min C.T*X
 */
 void
 DLP::setup_optimization_vector(){
+	if (DEBUG)
+		printf("[%s]: Setting up optimization vector...\n", __FUNCTION__);
+
 	assert(XrefIsSet && XeIsSet);
 	//XrefIsSet  =false;
 	XeIsSet = false;
@@ -844,6 +1031,9 @@ DLP::setup_optimization_vector(){
 	// fill objective vector
 	C.block(0,0,ns*Tp,1) = beta*Xref + alpha*Xe;
 	cIsSet = true;
+
+	if (DEBUG)
+		printf("[%s]: Done setting up optimization vector.\n", __FUNCTION__);
 	return;
 
 }
@@ -853,6 +1043,9 @@ DLP::setup_optimization_vector(){
 */
 void
 DLP::setup_glpk_global_problem(){
+	if (DEBUG)
+		printf("[%s]: Setting up GLPK global problem...\n", __FUNCTION__);
+
 	/*
 	* **NOTE**: creating the problem object in each run BLOWS up the memory!!
 	* Use glp_erase_prob(lp) instead
@@ -929,6 +1122,11 @@ DLP::setup_glpk_global_problem(){
 	// check if matrix is correct
 	//int chk= glp_check_dup(nEq+nIneq, (ns+nu)*Tp, nnzEq+nnzIneq, ia, ja);
 	glp_load_matrix(lp, nnzEq+nnzIneq, ia, ja, ar);
+
+	if (DEBUG)
+		printf("[%s]: Done setting up global GLPK problem.\n", __FUNCTION__);
+
+	return;
 }
 
 /**
@@ -936,6 +1134,9 @@ DLP::setup_glpk_global_problem(){
 */
 void
 DLP::setup_glpk_local_problem(){
+	if (DEBUG)
+		printf("[%s]: Setting up local GLPK problem...\n", __FUNCTION__);
+
 	/*
 	* **NOTE**: creating the problem object in each run BLOWS up the memory!!
 	* Use glp_erase_prob(lp) instead
@@ -1030,6 +1231,11 @@ DLP::setup_glpk_local_problem(){
 		int r[1+1]; r[1] = nEq+nIneq+1;
 		glp_del_rows(lp, 1, r);
 	}
+
+	if (DEBUG)
+		printf("[%s]: Done setting up local GLPK problem.\n", __FUNCTION__);
+
+	return;
 }
 
 /**
@@ -1041,6 +1247,9 @@ DLP::setup_glpk_local_problem(){
 */
 void
 DLP::update_collision_constraint(){
+	if (DEBUG)
+		printf("[%s]: Updating collision constraints...\n", __FUNCTION__);
+
 	// init vectors
 	x_obs = MatrixXf::Constant(ns,1,0.0);
 	//X_obs = MatrixXf::Constant(ns*Tp,1,0.0);
@@ -1104,6 +1313,9 @@ DLP::update_collision_constraint(){
 	}
 	x_obs_s = x_obs.sparseView();
 
+	if (DEBUG)
+		printf("[%s]: Done updating collision constraints.\n", __FUNCTION__);
+
 	return;
 }
 
@@ -1115,6 +1327,8 @@ DLP::update_collision_constraint(){
 */
 void
 DLP::sense_neighbors(){
+	if (DEBUG)
+		printf("[%s]: Sensing neighbors...\n", __FUNCTION__);
 
 	// get my neighbors
 	int L =2*Nr; /* radius of sensing; 2 hops */
@@ -1154,17 +1368,15 @@ DLP::sense_neighbors(){
 		}
 	}
 	if (DEBUG){
-		cout << "############################################# \n";
-		cout << "[sense_neighbors] mycurrent location: " << my_current_location << "\n";
-		cout << "[sense_neighbors] Current neighbor sectors: " << neighbor_sectors.transpose() << "\n";
-		cout << "[sense_neighbors] number of sensed neighbors: " << N_sensed_neighbors << "\n";
-		cout << "[sense_neighbors] Current Defenders locations: " <<  d_current_locations.transpose() << "\n";
+		cout << "[" << __FUNCTION__ << "] my current location: " <<  my_current_location << endl;
+		cout <<"[" << __FUNCTION__ << "] Current neighbor sectors: " << neighbor_sectors.transpose() << "\n";
+		cout <<"[" << __FUNCTION__ << "] number of sensed neighbors: " << N_sensed_neighbors << "\n";
+		cout <<"[" << __FUNCTION__ << "]Current Defenders locations: " <<  d_current_locations.transpose() << "\n";
 		if (N_sensed_neighbors>0){
-			cout << "[sense_neighbors] Sensed neighbors: "<< sensed_neighbors.transpose() << "\n";
+			cout <<"[" << __FUNCTION__ << "] Sensed neighbors: "<< sensed_neighbors.transpose() << "\n";
 		}else{
-			cout << "[sense_neighbors] No neighbors inside the sensed area." << "\n";
+			cout <<"[" << __FUNCTION__ << "] No neighbors inside the sensed area." << "\n";
 		}
-		cout << "############################################# \n";
 	}
 
 }
@@ -1236,35 +1448,35 @@ DLP::sense_local_attackers(){
 */
 void
 DLP::update_LP(){
+	if (DEBUG){
+		printf("[%s]: Updating global LP...\n", __FUNCTION__);
+		printf("==================================");
+	}
+
 	int nEq = ns*Tp; /* number of Eq constraints */
 	int nIneq = ns*Tp; /* number of Ineq constraints */
 
 	/* prerequisit updates */
 	clock_t start, end;
 	start = clock();
-	if (DEBUG)
-		cout << "================================== \n";
+
 	DLP::update_X0();
-	if (DEBUG)
-		cout << "[update_LP] X0 is updated \n";
 
 	DLP::update_Xe();
-	if (DEBUG)
-		cout << "[update_LP] Xe is updated \n";
 
 	DLP::setup_optimization_vector();
-	if (DEBUG)
-		cout << "[update_LP] optimization vector, C,  is updated \n";
 
 	/* update glpk problem */
 	DLP::setup_glpk_global_problem();
-	if (DEBUG)
-		cout << "[update_LP] glpk global problem is updated \n";
+
 	end = clock();
+
 	if (DEBUG){
-		cout << " [update_LP] Problem updated in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << "[" << __FUNCTION__ << "] Done updating global LP in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
 		cout << "================================== \n";
 	}
+
+	return;
 
 }
 
@@ -1274,36 +1486,26 @@ DLP::update_LP(){
 */
 void
 DLP::update_LP_dist(){
+	if (DEBUG)
+		printf("[%s]: Updating local LP...\n", __FUNCTION__);
 	int nEq = ns*Tp; /* number of Eq constraints */
 	int nIneq = ns*Tp; /* number of Ineq constraints */
 
 	/* prerequisit updates */
 	clock_t start, end;
 	start = clock();
-	if (DEBUG)
-		cout << "================================== \n";
 
 	DLP::update_X0_dist();
-	if (DEBUG)
-		cout << "[update_LP_dist] X0 is updated \n";
 
 	DLP::update_Xe();
-	if (DEBUG)
-		cout << "[update_LP_dist] Xe is updated \n";
 
 	DLP::setup_optimization_vector();// C vector
-	if (DEBUG)
-		cout << "[update_LP_dist] Optimization vector, C,  is updated \n";
 
 	DLP::update_collision_constraint();
-	if (DEBUG)
-		cout << "[update_LP_dist] Collision constraints are updated \n";
 
 
 	/* NOTE: glpk indexing starts from 1 */
 	DLP::setup_glpk_local_problem();
-	if (DEBUG)
-		cout << "[update_LP_dist] glpk problem is updated \n";
 
 /*
 	// set equality/dynamics constraints
@@ -1324,10 +1526,11 @@ DLP::update_LP_dist(){
 
 	end = clock();
 	if (DEBUG){
-		cout << "[update_LP_dist] Problem updated in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << "[" << __FUNCTION__ << "] Done updating local LP in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
 		cout << "================================== \n";
 	}
-
+	
+	return;
 }
 
 /**
@@ -1337,6 +1540,9 @@ DLP::update_LP_dist(){
 */
 void
 DLP::setup_problem(){
+	if (DEBUG)
+		printf("[%s]: Setting up problem...\n",__FUNCTION__);
+
 	ns = nRows*nCols;
 	nu = ns*ns;
 
@@ -1353,7 +1559,10 @@ DLP::setup_problem(){
 	DLP::update_collision_constraint();
 	//DLP::setup_boundary_constraints();
 
-	DLP::setup_enemy_feedback_matrix();
+	if (DEFENDER_SIDE)
+		DLP::setup_enemy_feedback_matrix();
+	else
+		DLP::setup_defenders_feedback_matrix();
 	DLP::update_Xe();
 	DLP::setup_optimization_vector();
 
@@ -1363,7 +1572,8 @@ DLP::setup_problem(){
 //	cout << "Setup is done in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
 	if (DEBUG)
-		cout << "[setup_problem] Setup is done in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << "[" << __FUNCTION__ << "] Setup is done in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+
 	return;
 
 }
@@ -1385,9 +1595,11 @@ DLP::solve_simplex(){
 	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
 	if (DEBUG){
-		cout << " [solve_simplex] Simplex solver executed in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
-		cout << " [solve_simplex] objective value = " <<  glp_get_obj_val(lp) << endl;
+		cout << "[" << __FUNCTION__ << "] Simplex solver executed in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << "[" << __FUNCTION__ << "] objective value = " <<  glp_get_obj_val(lp) << endl;
 	}
+
+	return;
 }
 
 /**
@@ -1407,7 +1619,7 @@ DLP::solve_intp(){
 	//cout << "Problem solved in "<<((float)duration)/1000000.0 <<" seconds."<<endl;
 	end = clock();
 	if (DEBUG){
-        cout << "Interior point solver runs in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+    cout << "Interior point solver runs in " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
 		cout << "obj value = " <<  glp_get_obj_val(lp) << endl;
 	}
 
@@ -1477,6 +1689,9 @@ DLP::extract_centralized_solution(){
 			*/
 		} /* done looping over neighbors */
 	} /* done looping over d_next_locations */
+
+	/* get this agent's next sector */
+	my_next_location = d_next_locations(myID,0);
 	cout <<endl;
 	return;
 }

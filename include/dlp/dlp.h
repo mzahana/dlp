@@ -44,10 +44,6 @@ class DLP
 public:
 
 	/**
-	* Debug flag
-	*/
-	bool DEBUG;
-	/**
 	* Constructor.
 	* It takes no arguments.
 	*/
@@ -58,8 +54,18 @@ public:
 	~DLP();
 
 	/**
+	* Debug flag
+	*/
+	bool DEBUG;
+
+	/**
 	* Set functions.
 	*/
+
+	/** Set defender vs. atatcker side.
+	* @param f true if playing as defenders. Otherwise, it's false
+	*/
+	void set_defender_side(bool f);
 
 	/**
 	* set this agent's ID.
@@ -312,6 +318,8 @@ private:
 	* Memeber variables
 	*/
 
+	bool DEFENDER_SIDE; /**< Flag to set whether playing on defender side vs attacker side. */
+
 	int myID; /**< my agent ID \in {1,2, ..., Nd}*/
 
 	int nRows; /**< Default number of rows in grid. */
@@ -500,7 +508,7 @@ private:
 	MatrixXf b_boundary;
 
 	/**
-	* Enenmy state trjectory Transformation matrix, T_G
+	* Enenmy/defender state prediction Transformation matrix, T_G
 	*/
 	MatrixXf T_G;
 
@@ -638,6 +646,12 @@ private:
 	* TODO: needs implementation
 	*/
 	void setup_enemy_feedback_matrix();
+
+	/**
+	* Calculates a feedback matrix which is used to estimate defenders future locations
+	* from attackers prespective.
+	*/
+	void setup_defenders_feedback_matrix();
 
 	/**
 	* Updates enemy state trajectory over Tp
