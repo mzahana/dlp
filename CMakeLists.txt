@@ -202,6 +202,12 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
+# Normal dlp node for defenders planning
 add_executable(dlp_node src/dlp_node.cpp src/dlp.cpp)
 target_link_libraries(dlp_node ${catkin_LIBRARIES} glpk)
 add_dependencies(dlp_node dlp_generate_messages_cpp)
+
+# dlp node for attackers planning
+add_executable(dlp_node_attacking src/dlp_node_attacking.cpp src/dlp.cpp)
+target_link_libraries(dlp_node_attacking ${catkin_LIBRARIES} glpk)
+add_dependencies(dlp_node_attacking dlp_generate_messages_cpp)
