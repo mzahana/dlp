@@ -415,7 +415,7 @@ int main(int argc, char **argv)
 
 		// get defenders locations: considered attackers here
 		// but cb.d_loc_msg holds actual defenders
-		dloc = MatrixXf::Constant(Ne,1,0.0);
+		eloc = MatrixXf::Constant(Nd,1,0.0);
 		for (int i=0; i< cb.d_loc_msg.defenders_count; i++){
 			enu(0,0) = cb.d_loc_msg.defenders_position[i].x;
 			enu(1,0) = cb.d_loc_msg.defenders_position[i].y;
@@ -428,7 +428,7 @@ int main(int argc, char **argv)
 		problem.set_e_current_locations(eloc);
 
 		// get enemy locations
-		eloc = MatrixXf::Constant(Nd,1,0.0);
+		dloc = MatrixXf::Constant(Ne,1,0.0);
 		for (int i=0; i< cb.e_loc_msg.enemy_count; i++){
 			enu(0,0) = cb.e_loc_msg.enemy_position[i].x;
 			enu(1,0) = cb.e_loc_msg.enemy_position[i].y;
