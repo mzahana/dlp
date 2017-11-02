@@ -1,0 +1,10 @@
+<launch>
+
+
+	<!-- Launch trajectory plotter node-->
+	<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+	<node pkg="dlp" type="trajectory_plotter.py" name="trajectory_plotter"  required="true" output="screen">
+	</node>
+
+
+</launch>
