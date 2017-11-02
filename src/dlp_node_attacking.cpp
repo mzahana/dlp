@@ -74,7 +74,6 @@ public:
 	// my local ENU position, from mavros.
 
 	void local_enu_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
-
 		local_enu_msg.header		= msg->header;
 		local_enu_msg.pose.position	= msg->pose.position;
 		/*
@@ -192,7 +191,8 @@ int main(int argc, char **argv)
 	* You must call one of the versions of ros::init() before using any other
 	* part of the ROS system.
 	*/
-	ros::init(argc, argv, "dlp_node");
+	/* this node is for planning attacking paths */
+	ros::init(argc, argv, "dlp_node_attacking");
 
 	/**
 	* NodeHandle is the main access point to communications with the ROS system.
@@ -208,14 +208,6 @@ int main(int argc, char **argv)
 	nh.param("debug", bDebug, false);
 	int myID, rows, cols;
 	nh.param("myID", myID, 0);
-
-	/* Centralized vz distributed approaches*/
-	bool bGlobalComms;
-	nh.param("global_comms", bGlobalComms, false);
-
-	/* Global vs. local enemy sensing */
-	bool bLocalSensing;
-	nh.param("local_sensing", bLocalSensing, false);
 
 	std::vector<int> grid_size, default_grid_size;
 	// default to 7x7 grid
@@ -236,15 +228,16 @@ int main(int argc, char **argv)
 	nh.param< vector<int> >("Base", base, default_base);
 	nh.param< vector<int> >("BaseRef", baseRef, default_baseRef);
 
+	/* Tp will be forced to 1 anyway, in attacking planning*/
 	int Tp;
-	nh.param("Tp", Tp, 2);
+	nh.param("Tp", Tp, 1);
 
 	int Nr;
 	nh.param("neighbor_radius", Nr, 1);
 
 	// set strategy weights, alpha, beta
 	float alpha, beta;
-	nh.param<float>("alpha", alpha, -0.99);
+	nh.param<float>("alpha", alpha, 0.99);
 	nh.param<float>("beta", beta, -0.01);
 
 	std::vector<float> origin_shifts, default_shifts;
@@ -309,11 +302,9 @@ int main(int argc, char **argv)
 	* Create DLP problem and set parameters.
 	*/
 	DLP problem;
+	problem.set_defender_side(false); // We are doing attackers planning
 	problem.DEBUG = bDebug;
 	problem.set_myID(myID);
-	
-	/* set local vs global enemy sensing*/
-	problem.set_local_attacker_sensing(bLocalSensing);
 
 	problem.set_nRows(grid_size[0]);
 	problem.set_nCols(grid_size[1]);
@@ -321,8 +312,10 @@ int main(int argc, char **argv)
 	problem.set_origin_shifts(origin_shifts[0], origin_shifts[1]);
 
 	problem.set_Tp(Tp);
-	problem.set_Nd(Nd);
-	problem.set_Ne(Ne);
+
+	/* Ne/Nd are switched because it's attacking planning*/
+	problem.set_Nd(Ne);
+	problem.set_Ne(Nd);
 
 	MatrixXf Base(nBase,1);
 	for (int i=0; i<nBase; i++){
@@ -339,10 +332,10 @@ int main(int argc, char **argv)
 	// set strategy weights
 	problem.set_weights(alpha, beta);
 
-	MatrixXf eloc(Ne,1);
-	MatrixXf temp_eloc(Ne,1);
-	MatrixXf e_predicted_loc(Ne,1);
-	MatrixXf dloc(Nd,1);
+	/* defenders/attackers will switch roles. This is why Ne replaces Nd*/
+	MatrixXf eloc(Nd,1);
+	MatrixXf e_predicted_loc(Nd,1);
+	MatrixXf dloc(Ne,1);
 
 	MatrixXf sensedN;
 	MatrixXf neighbors_next_loc;
@@ -354,25 +347,26 @@ int main(int argc, char **argv)
 	int sector_from_enu;
 
 
+	/* to meausre time */
 	clock_t start, end;
 	
 
-	// Initialize defenders/enemy messages
-	for (int i=0; i<Nd; i++){
+	/* Initialize defenders/enemy messages. Ne/Nd will be switched */
+	for (int i=0; i<Ne; i++){
 		dloc(i,0) = i+1;
 	}
-
-	for (int i=0; i<Ne; i++){
-		eloc(i,0) = i+Nd+1;
+	for (int i=0; i<Nd; i++){
+		eloc(i,0) = i+Ne+1;
 	}
 	
+	/* here, Nd/Ne are not switched, because the represent actual Nd/Ne */
 	cb.d_loc_msg.defenders_count = Nd;
 	cb.e_loc_msg.enemy_count = Ne;
 	cb.d_loc_msg.defenders_sectors.resize(Nd);
 	cb.d_loc_msg.defenders_position.resize(Nd);
 	for (int i=0; i<Nd; i++){
-		cb.d_loc_msg.defenders_sectors[i] = (int)dloc(i,0);
-		enu = problem.get_ENU_from_sector(dloc(i,0));
+		cb.d_loc_msg.defenders_sectors[i] = (int)eloc(i,0); // because eloc holds actual defenders locations
+		enu = problem.get_ENU_from_sector(eloc(i,0));
 		cb.d_loc_msg.defenders_position[i].x = enu(0,0);
 		cb.d_loc_msg.defenders_position[i].y = enu(1,0);
 		cb.d_loc_msg.defenders_position[i].z = altitude_setpoint;
@@ -380,14 +374,12 @@ int main(int argc, char **argv)
 
 	cb.e_loc_msg.enemy_position.resize(Ne);
 	cb.e_loc_msg.enemy_sectors.resize(Ne);
-	cb.e_loc_msg.is_captured.resize(Ne);
 	for (int i=0; i<Ne; i++){
-		cb.e_loc_msg.enemy_sectors[i] = (int)eloc(i,0);
-		enu = problem.get_ENU_from_sector(eloc(i,0));
+		cb.e_loc_msg.enemy_sectors[i] = (int)dloc(i,0);// because dloc holds actual attackers locations
+		enu = problem.get_ENU_from_sector(dloc(i,0));
 		cb.e_loc_msg.enemy_position[i].x = enu(0,0);
 		cb.e_loc_msg.enemy_position[i].y = enu(1,0);
 		cb.e_loc_msg.enemy_position[i].z = altitude_setpoint;
-		cb.e_loc_msg.is_captured[i] = false;
 	}
 	enu = problem.get_ENU_from_sector(dloc(myID,0));
 	/*
@@ -421,36 +413,31 @@ int main(int argc, char **argv)
 		start = clock();
 
 
-		// get defenders locations
-		dloc = MatrixXf::Constant(Nd,1,0.0);
+		// get defenders locations: considered attackers here
+		// but cb.d_loc_msg holds actual defenders
+		eloc = MatrixXf::Constant(Nd,1,0.0);
 		for (int i=0; i< cb.d_loc_msg.defenders_count; i++){
 			enu(0,0) = cb.d_loc_msg.defenders_position[i].x;
 			enu(1,0) = cb.d_loc_msg.defenders_position[i].y;
 			enu(2,0) = cb.d_loc_msg.defenders_position[i].z;
-			dloc(i,0) =problem.get_sector_from_ENU(enu);
-		}
-		if (problem.DEBUG)
-			cout << "[dlp_node] [loop] d_loc:  " << dloc.transpose() << "\n";
-
-		problem.set_d_current_locations(dloc);
-
-		// get enemy locations
-		eloc = MatrixXf::Constant(Ne,1,0.0);
-		for (int i=0; i< cb.e_loc_msg.enemy_count; i++){
-			
-			if (cb.e_loc_msg.is_captured[i]){
-				eloc(i,0) = 0.0;
-			}
-			else{
-				enu(0,0) = cb.e_loc_msg.enemy_position[i].x;
-				enu(1,0) = cb.e_loc_msg.enemy_position[i].y;
-				enu(2,0) = cb.e_loc_msg.enemy_position[i].z;
-				eloc(i,0) =problem.get_sector_from_ENU(enu);
-			}
+			eloc(i,0) =problem.get_sector_from_ENU(enu);// eloc because attackers take defenders side !
 		}
 		if (problem.DEBUG)
 			cout << "[dlp_node] [loop] e_loc:  " << eloc.transpose() << "\n";
+
 		problem.set_e_current_locations(eloc);
+
+		// get enemy locations
+		dloc = MatrixXf::Constant(Ne,1,0.0);
+		for (int i=0; i< cb.e_loc_msg.enemy_count; i++){
+			enu(0,0) = cb.e_loc_msg.enemy_position[i].x;
+			enu(1,0) = cb.e_loc_msg.enemy_position[i].y;
+			enu(2,0) = cb.e_loc_msg.enemy_position[i].z;
+			dloc(i,0) =problem.get_sector_from_ENU(enu);// dloc because attackers take defenders side !
+		}
+		if (problem.DEBUG)
+			cout << "[dlp_node] [loop] d_loc:  " << dloc.transpose() << "\n";
+		problem.set_d_current_locations(dloc);
 		
 		// set my current location
 		if (use_gps){
@@ -499,24 +486,13 @@ int main(int argc, char **argv)
 		//enu = problem.get_ENU_from_sector(dloc(myID,0));
 		//sector_from_enu = problem.get_sector_from_ENU(enu);
 
-		if (bGlobalComms)
-			problem.update_LP();
-		else
-			problem.update_LP_dist();
+		/* in attacker planning, we always solve global problem */
+		problem.update_LP();
 
 		problem.solve_simplex();// faster than interior point
 
 		//problem.solve_intp();
-		if (bGlobalComms)
-			problem.extract_centralized_solution();
-		else
-			problem.extract_local_solution();
-
-		//problem.get_d_next_locations(next_loc);
-		neighbors_next_loc = problem.get_neighbor_next_locations();
-
-		sensedN = problem.get_sensed_neighbors();
-
+		problem.extract_centralized_solution();
 
 		end = clock();
 
@@ -550,7 +526,7 @@ int main(int argc, char **argv)
 			// get next mavros local_position
 				// from enu in grid position to absolute LLA
 			hp.NED2LLA(hp.lat0, hp.lon0, enu(1,0), enu(0,0));
-				// from abolute LLA to mavros local_position
+			// from abolute LLA to mavros local_position
 			hp.LLA2ENU(cb.current_lat, cb.current_long, hp.lat, hp.lon);
 			enu(0,0) = hp.dx;
 			enu(1,0) = hp.dy;
@@ -578,16 +554,9 @@ int main(int argc, char **argv)
 			my_state.my_next_local_position.z = altitude_setpoint;
 		}
 
-		if (problem.get_N_sensed_neighbors() > 0){
-			my_state.sensed_neighbors.resize(problem.get_N_sensed_neighbors());
-			for (int i=0; i< problem.get_N_sensed_neighbors(); i++){
-				my_state.sensed_neighbors[i] = sensedN(i,0);
-			}
-		}
-		else
-			my_state.sensed_neighbors.clear();
-
 		// set current sensed (and predicted) attackers locations
+		// not needed in attcker planning
+		/*
 		e_predicted_loc = problem.get_predicted_attackers_sectors();
 		my_state.sensed_attackers_locaitons.resize(Ne);
 		my_state.predicted_attackers_locations.resize(Ne);
@@ -596,6 +565,7 @@ int main(int argc, char **argv)
 				my_state.sensed_attackers_locaitons[i] = (int) eloc(i,0);
 			}	my_state.predicted_attackers_locations[i] = (int) e_predicted_loc(i,0);
 		}
+		*/
 
 		my_state.execution_time_ms = (float)( (end-start)/( (clock_t)1000) );
 
@@ -606,16 +576,13 @@ int main(int argc, char **argv)
 			cout << "###################################################### \n" ;
 			cout << "[dlp_node] I am agent: " << problem.get_myID() << "\n";
 			cout << "[dlp_node] Problem solved in Total time= " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
-			cout << "[dlp_node] attacker current locations: " << eloc.transpose()<< endl;
-			cout << "[dlp_node] Defenders locations: " << dloc.transpose() << endl;
-			cout << "[dlp_node] local planned transition: "<< problem.get_my_current_location()
+			cout << "[dlp_node] defenders current locations: " << eloc.transpose()<< endl;
+			cout << "[dlp_node] Attackers locations: " << dloc.transpose() << endl;
+			problem.get_d_next_locations(next_loc);
+			cout << "[dlp_node] Attacker planned transitions: "<< dloc.transpose()
 				<< " ---> "
-				<< problem.get_my_next_location()
+				<< next_loc.transpose()
 				<< "\n";
-			if (problem.get_N_sensed_neighbors() > 0)
-				cout << "[dlp_node] Sensed Neighbors: " << sensedN.transpose() << "\n";
-			else
-				cout << "[dlp_node] Sensed Neighbors: []" <<"\n";
 			cout << "###################################################### \n" ;
 		}
 

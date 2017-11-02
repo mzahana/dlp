@@ -30,6 +30,7 @@
 #include <assert.h>     /* assert */
 #include <algorithm>	/* min/max */
 #include <vector>       // std::vector
+#include <math.h>       /* sin */
 //#include <chrono> 		/* time measurments */
 using namespace Eigen;
 using namespace std;
@@ -43,10 +44,6 @@ class DLP
 public:
 
 	/**
-	* Debug flag
-	*/
-	bool DEBUG;
-	/**
 	* Constructor.
 	* It takes no arguments.
 	*/
@@ -57,8 +54,18 @@ public:
 	~DLP();
 
 	/**
+	* Debug flag
+	*/
+	bool DEBUG;
+
+	/**
 	* Set functions.
 	*/
+
+	/** Set defender vs. atatcker side.
+	* @param f true if playing as defenders. Otherwise, it's false
+	*/
+	void set_defender_side(bool f);
 
 	/**
 	* set this agent's ID.
@@ -141,6 +148,12 @@ public:
 	void set_weights(float a, float b);
 
 	/**
+	* Sets a provate boolean flag bLocalAttackerSensing.
+	* If true, only local attackers are seen. Otherwise, all attackers are considered.
+	*/
+	void set_local_attacker_sensing(bool flag);
+
+	/**
 	* Constructs Xref vector over Tp.
 	* Uses ns, BaseRefs, and Tp members to construct Xref
 	*/
@@ -181,6 +194,17 @@ public:
 	float get_my_next_location();
 
 	/**
+	* Returns the estimated attackers trajectory (x_e[1]) at t=1.
+	* @return pointer to vector of predicted attackers state at t=1
+	*/
+	MatrixXf& get_xe1();
+
+	/** Finds the predicrted attackers sectors at t=1, from attackers predictred trajectory xe1
+	* @return pointer to verctor of predicted sector for each attacker
+	*/
+	MatrixXf& get_predicted_attackers_sectors();
+
+	/**
 	* Set grid resolution, in ENU.
 	* @param dx width of sector along X axis, in [meter].
 	* @param dy width of sector along Y axis, in [meter].
@@ -203,7 +227,7 @@ public:
 
 	/**
 	* Update glpk problem.
-	* updates the objective vector, and constraints bounds based on X0, Xe
+	* updates the objective vector, and constraibLocalAttackerSensingnts bounds based on X0, Xe
 	*/
 	void update_LP();
 
@@ -259,6 +283,12 @@ public:
 	MatrixXf& get_sensed_neighbors();
 
 	/**
+	* Returns numbers of sensed attackers
+	* @return <int> number of sensed attackers.
+	*/
+	int get_N_local_attackers();
+
+	/**
 	* Returns neighbors' next locations.
 	* @return vector of neighbors' next locations.
 	*/
@@ -288,6 +318,8 @@ private:
 	* Memeber variables
 	*/
 
+	bool DEFENDER_SIDE; /**< Flag to set whether playing on defender side vs attacker side. */
+
 	int myID; /**< my agent ID \in {1,2, ..., Nd}*/
 
 	int nRows; /**< Default number of rows in grid. */
@@ -304,8 +336,8 @@ private:
 	*/
 	MatrixXi S;
 
-	int dcols_x; /**< grid resolution, in East(x), in [m]. */
-	int drows_y; /**< grid resolution, in North(y), in [m]. */
+	float dcols_x; /**< grid resolution, in East(x), in [m]. */
+	float drows_y; /**< grid resolution, in North(y), in [m]. */
 
 	/**
 	* Origin shifts in [m].
@@ -336,6 +368,9 @@ private:
 
 	int N_sensed_neighbors; /**< number of sensed neighbors */
 	MatrixXf sensed_neighbors; /**< sectors location of sensed neighbors */
+
+	int N_local_attackers; /**< number of local sensed attackers*/
+	MatrixXf local_attackers; /**< sector locations of locally sensed attackers */
 
 	int Nd; /**< number of defenders. */
 	int Ne; /**< number of attackers. */
@@ -374,8 +409,21 @@ private:
 	* current attackers locations. Distributed problem.
 	*/
 	MatrixXf e_current_local_locations;
+	/** 
+	* Predicted attackers locations. Centralized Problem
+	*/
+	MatrixXf e_next_locations;
+	/** 
+	* Predicted attackers locations. Distributed Problem
+	*/
+	MatrixXf e_next_local_locations;
 
 	bool e_locIsSet; /**< flag for enemy location setting. */
+
+	/**
+	* local attackers sensing flag.
+	*/
+	bool bLocalAttackerSensing;
 
 	/**
 	* next defenders locations.
@@ -419,6 +467,10 @@ private:
 	*/
 	MatrixXf xe0;
 	/**
+	* Estimated attackers state at t=1.
+	*/
+	MatrixXf xe1;
+	/**
 	* Enemy state trajectory over prediciotn horizon Tp
 	*/
 	MatrixXf Xe;
@@ -456,7 +508,7 @@ private:
 	MatrixXf b_boundary;
 
 	/**
-	* Enenmy state trjectory Transformation matrix, T_G
+	* Enenmy/defender state prediction Transformation matrix, T_G
 	*/
 	MatrixXf T_G;
 
@@ -568,6 +620,14 @@ private:
 	void setup_boundary_constraints();
 
 	/**
+	*  finds distance between 2 sectors.
+	* @param s1 1st sector
+	* @param s2 2nd sector
+	* @return distance
+	*/
+	float get_s2s_dist(int s1, int s2);
+
+	/**
 	*  finds minimum distance from a sector to base
 	* @param s input sector
 	* @return minimum distance to base
@@ -588,6 +648,12 @@ private:
 	void setup_enemy_feedback_matrix();
 
 	/**
+	* Calculates a feedback matrix which is used to estimate defenders future locations
+	* from attackers prespective.
+	*/
+	void setup_defenders_feedback_matrix();
+
+	/**
 	* Updates enemy state trajectory over Tp
 	*/
 	void update_Xe();
@@ -598,9 +664,14 @@ private:
 	void setup_optimization_vector();
 
 	/**
-	* sets up glpk problem
+	* sets up glpk global problem
 	*/
-	void setup_glpk_problem();
+	void setup_glpk_global_problem();
+
+	/**
+	* sets up glpk local_problem
+	*/
+	void setup_glpk_local_problem();
 
 	/**
 	* TODO
@@ -617,6 +688,14 @@ private:
 	* 1-step reachable sectors (based on dynamics)
 	*/
 	void sense_neighbors();
+
+	/**
+	* Simulates local attackers sensing.
+	* It selects attackers (from set of all atrackers) that belong to a local neighborhood.
+	* Sensing/local neighborhood is assumed to be 2 hops away, where 1 hop means reachable sectors per time step.
+	* updated variables: N_sensed_neighbors, sensed_neighbors
+	*/
+	void sense_local_attackers();
 };
 
 #endif

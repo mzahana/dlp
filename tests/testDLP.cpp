@@ -16,11 +16,13 @@
 int main(){
 	DLP problem;
 	problem.DEBUG = true;
+	//problem.set_defender_side(false);
+
 	int myID =2;// 0 is 1st agent
 	problem.set_myID(myID);
-	int Nd=3; int Ne = 2;
+	int Nd=3; int Ne = 3;
 	int rows=7; int cols=7;
-	int Tp=2;
+	int Tp=3;
 
 	int nBaseref=3;
 	int nB=1;
@@ -48,22 +50,23 @@ int main(){
 
 	clock_t start, end;
 
-	m(0,0)=2.0; m(1,0)=8.0; m(2,0)=9.0;
+	m(0,0)=2.0; m(1,0)=11.0; m(2,0)=12.0;
 
 	problem.set_nCols(rows);
 	problem.set_nRows(cols);
 	problem.set_Tp(Tp);
 	problem.set_Nd(Nd);
 	problem.set_Ne(Ne);
+	problem.DEBUG = true;
 
 	// grid resolution
-	problem.set_grid_resolution(dx, dy);
+	//problem.set_grid_resolution(dx, dy);
 	// origin shift
-	problem.set_origin_shifts(shift_x, shift_y);
+	//problem.set_origin_shifts(shift_x, shift_y);
 
 	dloc(0,0)=15.0; dloc(1,0)=17.0; dloc(2,0)=19.0;
 
-	eloc(0,0)=28.0;eloc(1,0)=26.0;
+	eloc(0,0)=0.0;eloc(1,0)=26.0; eloc(2,0) = 49.0;
 
 
 	problem.set_BaseRef(nBaseref, m);
@@ -81,26 +84,35 @@ int main(){
 
 
 	// each run typically requires the following 4 lines
-
+	/*
 	problem.set_myID(myID);
 	problem.set_d_current_locations(dloc);
 	problem.set_my_current_location(dloc(myID,0));
 	problem.set_e_current_locations(eloc);
-	//problem.setup_problem();
+	problem.setup_problem();
+	*/
 
 	// test conversion from sector to ENU and vise versa
 	enu = problem.get_ENU_from_sector(dloc(myID,0));
 	sector_from_enu = problem.get_sector_from_ENU(enu);
 
-	//problem.update_LP();
+	problem.update_LP();
+	problem.solve_simplex();
+
+	/*
 	problem.update_LP_dist();
 	problem.solve_simplex();// faster than interior point
+	*/
+
 	//problem.solve_intp();
-	//problem.extract_centralized_solution();
+	problem.extract_centralized_solution();
+	problem.get_d_next_locations(next_loc);
+
+	
 	problem.extract_local_solution();
-	//problem.get_d_next_locations(next_loc);
 	neighbors_next_loc = problem.get_neighbor_next_locations();
 	sensedN = problem.get_sensed_neighbors();
+
 
 	end = clock();
 	if (problem.DEBUG){

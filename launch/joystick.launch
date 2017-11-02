@@ -1,0 +1,17 @@
+<launch>
+	<arg name="id" default="0"/>
+	<arg name="joy" default="False"/>
+	<arg name="ns" default="attacker_$(arg id)"/>
+	<arg name="joy_dev" default="/dev/input/js0"/>
+
+	<group ns="$(arg ns)">
+		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+
+		<param name="myID" type="int" value="$(arg id)" />
+		<param name="enable_joy" type="bool" value="$(arg joy)" />
+
+		<node pkg="joy" type="joy_node" name="joy_$(arg id)"  required="true" output="screen" if="$(arg joy)">
+			<param name="dev" type="string" value="$(arg joy_dev)" />
+		</node>
+	</group>
+</launch>

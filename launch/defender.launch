@@ -1,0 +1,13 @@
+<launch>
+	<arg name="id" default="0"/>
+	<arg name="ns" default="defender_$(arg id)"/>
+	<group ns="$(arg ns)">
+		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+		<param name="myID" type="int" value="$(arg id)" />
+
+		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
+        	</node>
+		<node pkg="dlp" type="defender_node.py" name="defender_node_$(arg id)"  required="true" output="screen">
+        	</node>
+	</group>
+</launch>
