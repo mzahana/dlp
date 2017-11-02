@@ -10,39 +10,47 @@ grid_size: [7,7]
 # for hawrdware test
 #sector_size: [0.85, 0.85]
 # for simulation
-sector_size: [2, 2]
+sector_size: [2.0, 2.0]
 
 # origin shifts (dx,dy) from (0,0) in ENU, in meter(s)
 # for hardware experiment
 #origin_shifts: [3.0, 3.0]
 # for simulation
-origin_shifts: [0, 0]
+origin_shifts: [0.0, 0.0]
 
 N_defenders: 3
-N_attackers: 1
+N_attackers: 3
 
 # count of base sectors
 nBase: 1
 
 # set of base sectors 
-Base: [1]
+Base: [11]
 
 # count of base reference sectors
-nBaseRef: 3
+#nBaseRef: 3
+nBaseRef: 8
 
 # set of base referense sectors
-BaseRef: [2,8,9]
+#BaseRef: [2,8,9]
+BaseRef: [3,4,5,10,12,17,18,19]
 
 # strategy weights
 alpha: -0.99
 beta: -0.01
 
 # prediction horizon
-Tp: 2
+Tp: 4
 
 neighbor_radius: 1
 
+# defenders global/local sensing of enemies
+local_sensing: False
 
+# local vs. global communication between defenders (centralized vs decomposed approach)
+global_comms: True
+
+# maximum ROS loop frequency
 update_freq: 50
 
 # home position

@@ -16,7 +16,7 @@
 int main(){
 	DLP problem;
 	problem.DEBUG = true;
-	problem.set_defender_side(false);
+	//problem.set_defender_side(false);
 
 	int myID =2;// 0 is 1st agent
 	problem.set_myID(myID);
@@ -66,7 +66,7 @@ int main(){
 
 	dloc(0,0)=15.0; dloc(1,0)=17.0; dloc(2,0)=19.0;
 
-	eloc(0,0)=28.0;eloc(1,0)=26.0; eloc(2,0) = 49.0;
+	eloc(0,0)=0.0;eloc(1,0)=26.0; eloc(2,0) = 49.0;
 
 
 	problem.set_BaseRef(nBaseref, m);
@@ -84,12 +84,13 @@ int main(){
 
 
 	// each run typically requires the following 4 lines
-
+	/*
 	problem.set_myID(myID);
 	problem.set_d_current_locations(dloc);
 	problem.set_my_current_location(dloc(myID,0));
 	problem.set_e_current_locations(eloc);
-	//problem.setup_problem();
+	problem.setup_problem();
+	*/
 
 	// test conversion from sector to ENU and vise versa
 	enu = problem.get_ENU_from_sector(dloc(myID,0));

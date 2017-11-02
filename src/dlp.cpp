@@ -94,7 +94,7 @@ DLP::set_defender_side(bool f){
 	DEFENDER_SIDE = f;
 	// make sure that Tp=1 in attacker mode
 	if (not DEFENDER_SIDE)
-		Tp=1;
+		//Tp=1;
 
 	if (DEBUG)
 		printf("[%s]: Tp forced to 1 in attacker mode.\n", __FUNCTION__);
@@ -254,10 +254,13 @@ DLP::set_Tgame(float t){
 void
 DLP::set_Tp(int t){
 
+	Tp = t;
+	/*
 	if (not DEFENDER_SIDE)
 		Tp = 1;
 	else
 		Tp = t;
+	*/
 	return;
 }
 /**
@@ -847,8 +850,11 @@ DLP::update_Xe(){
 		int loc=0;
 		// fill xe0: one time step
 		for (int s=0; s< Ne; s++){
-			loc=e_current_locations(s,0)-1; // -1 coz c++ starts at 0
-			xe0(loc,0)=1.0;
+			/* if enemy location is 0, then it's captured and not considered*/
+			if (e_current_locations(s,0) > 0){
+				loc=e_current_locations(s,0)-1; // -1 coz c++ starts at 0
+				xe0(loc,0)=1.0;
+			}
 		}
 	}
 
@@ -887,17 +893,19 @@ DLP::get_predicted_attackers_sectors(){
 	for (int i=0; i<Ne; i++){
 		// get attacker's current sector location
 		float si = e_current_locations(i,0);
-		// get sector's neighbors
-		// result stored in neighbor_sectors
-		int N = get_NeighborSectors(si, 1);
-		// check which neighbor sector is assigned the highest prediction weight
-		int sj_maxw = 0;
-		for (int j=0; j<N; j++){
-			float sj = neighbor_sectors(j,0);
-			e_next_locations(i,0) = sj;
-			if (Xe(sj,0) > sj_maxw){
-				sj_maxw = Xe(sj,0); // not used for now!!
+		if (si > 0.0){
+			// get sector's neighbors
+			// result stored in neighbor_sectors
+			int N = get_NeighborSectors(si, 1);
+			// check which neighbor sector is assigned the highest prediction weight
+			int sj_maxw = 0;
+			for (int j=0; j<N; j++){
+				float sj = neighbor_sectors(j,0);
 				e_next_locations(i,0) = sj;
+				if (Xe(sj,0) > sj_maxw){
+					sj_maxw = Xe(sj,0); // not used for now!!
+					e_next_locations(i,0) = sj;
+				}
 			}
 		}
 	}
@@ -935,6 +943,8 @@ DLP::setup_defenders_feedback_matrix(){
 	float max_prob; // highest probabilty
 	MatrixXf G(nu,ns);
 	G = MatrixXf::Constant(nu,ns, 0.0);
+	MatrixXf temp_matrix(ns,ns); /* holds I +BG multiplications */
+	T_G = MatrixXf::Constant(ns*Tp,ns, 0.0);
 
 	/* loop over all attackers */
 	for (int a=0; a<Nd; a++){
@@ -1000,10 +1010,18 @@ DLP::setup_defenders_feedback_matrix(){
 			/* compute probability of staying */
 			G(d_loc*ns-ns + (d_loc-1), d_loc-1)  = 1.0- cumm_prob;
 		}
-		/* Done with the G matrix */
+	} /* Done with G matrix */
 
-		/* compute transition matrix (I + BG) . ONLY for 1 time step*/
-		T_G = MatrixXf::Identity(ns, ns) + B*G;
+	/* Done with the G matrix */
+
+	/* compute transition matrix (I + BG) . ONLY for 1 time step*/
+	//T_G = MatrixXf::Identity(ns, ns) + B*G;
+
+	/* build (I + BG) blocks! */
+	temp_matrix = MatrixXf::Identity(ns, ns) + B*G;
+	for (int i=0; i<Tp; i++){
+		T_G.block(i*ns,0,ns,ns) = temp_matrix;
+		temp_matrix *= temp_matrix;
 	}
 
 	if (DEBUG)

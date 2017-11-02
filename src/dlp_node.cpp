@@ -209,6 +209,14 @@ int main(int argc, char **argv)
 	int myID, rows, cols;
 	nh.param("myID", myID, 0);
 
+	/* Centralized vz distributed approaches*/
+	bool bGlobalComms;
+	nh.param("global_comms", bGlobalComms, false);
+
+	/* Global vs. local enemy sensing */
+	bool bLocalSensing;
+	nh.param("local_sensing", bLocalSensing, false);
+
 	std::vector<int> grid_size, default_grid_size;
 	// default to 7x7 grid
 	default_grid_size.push_back(7); default_grid_size.push_back(7);
@@ -303,6 +311,9 @@ int main(int argc, char **argv)
 	DLP problem;
 	problem.DEBUG = bDebug;
 	problem.set_myID(myID);
+	
+	/* set local vs global enemy sensing*/
+	problem.set_local_attacker_sensing(bLocalSensing);
 
 	problem.set_nRows(grid_size[0]);
 	problem.set_nCols(grid_size[1]);
@@ -329,6 +340,7 @@ int main(int argc, char **argv)
 	problem.set_weights(alpha, beta);
 
 	MatrixXf eloc(Ne,1);
+	MatrixXf temp_eloc(Ne,1);
 	MatrixXf e_predicted_loc(Ne,1);
 	MatrixXf dloc(Nd,1);
 
@@ -368,12 +380,14 @@ int main(int argc, char **argv)
 
 	cb.e_loc_msg.enemy_position.resize(Ne);
 	cb.e_loc_msg.enemy_sectors.resize(Ne);
+	cb.e_loc_msg.is_captured.resize(Ne);
 	for (int i=0; i<Ne; i++){
 		cb.e_loc_msg.enemy_sectors[i] = (int)eloc(i,0);
 		enu = problem.get_ENU_from_sector(eloc(i,0));
 		cb.e_loc_msg.enemy_position[i].x = enu(0,0);
 		cb.e_loc_msg.enemy_position[i].y = enu(1,0);
 		cb.e_loc_msg.enemy_position[i].z = altitude_setpoint;
+		cb.e_loc_msg.is_captured[i] = false;
 	}
 	enu = problem.get_ENU_from_sector(dloc(myID,0));
 	/*
@@ -423,13 +437,19 @@ int main(int argc, char **argv)
 		// get enemy locations
 		eloc = MatrixXf::Constant(Ne,1,0.0);
 		for (int i=0; i< cb.e_loc_msg.enemy_count; i++){
-			enu(0,0) = cb.e_loc_msg.enemy_position[i].x;
-			enu(1,0) = cb.e_loc_msg.enemy_position[i].y;
-			enu(2,0) = cb.e_loc_msg.enemy_position[i].z;
-			eloc(i,0) =problem.get_sector_from_ENU(enu);
+			
+			if (cb.e_loc_msg.is_captured[i]){
+				eloc(i,0) = 0.0;
+			}
+			else{
+				enu(0,0) = cb.e_loc_msg.enemy_position[i].x;
+				enu(1,0) = cb.e_loc_msg.enemy_position[i].y;
+				enu(2,0) = cb.e_loc_msg.enemy_position[i].z;
+				eloc(i,0) =problem.get_sector_from_ENU(enu);
+			}
 		}
 		if (problem.DEBUG)
-			cout << "[dlp_node] [loop] d_loc:  " << eloc.transpose() << "\n";
+			cout << "[dlp_node] [loop] e_loc:  " << eloc.transpose() << "\n";
 		problem.set_e_current_locations(eloc);
 		
 		// set my current location
@@ -479,14 +499,18 @@ int main(int argc, char **argv)
 		//enu = problem.get_ENU_from_sector(dloc(myID,0));
 		//sector_from_enu = problem.get_sector_from_ENU(enu);
 
-		//problem.update_LP();
-		problem.update_LP_dist();
+		if (bGlobalComms)
+			problem.update_LP();
+		else
+			problem.update_LP_dist();
 
 		problem.solve_simplex();// faster than interior point
 
 		//problem.solve_intp();
-		//problem.extract_centralized_solution();
-		problem.extract_local_solution();
+		if (bGlobalComms)
+			problem.extract_centralized_solution();
+		else
+			problem.extract_local_solution();
 
 		//problem.get_d_next_locations(next_loc);
 		neighbors_next_loc = problem.get_neighbor_next_locations();

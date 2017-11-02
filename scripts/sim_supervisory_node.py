@@ -158,11 +158,51 @@ class MasterC():
 			# get sector
 			self.e_msg.enemy_sectors[i] = self.enu2sector(x, y, 0.0)
 
+	def e2PosUpdate(self):
+		model_name = 'iris_5'
+		g_i = -1
+		i=1 # agent id in game team
+		for c in range(len(self.gz_msg.name)):
+			if self.gz_msg.name[c] == model_name:
+				# index of model in gazebo msg
+				g_i = c
+				break
+
+		# sanity check: make sure no negative index
+		if g_i > -1:
+			x = self.gz_msg.pose[g_i].position.x
+			y = self.gz_msg.pose[g_i].position.y
+			p=Point32(x, y, 0.0)
+			self.e_msg.enemy_position[i] = p
+			# get sector
+			self.e_msg.enemy_sectors[i] = self.enu2sector(x, y, 0.0)
+
+	def e3PosUpdate(self):
+		model_name = 'iris_6'
+		g_i = -1
+		i=2 # agent id in game team
+		for c in range(len(self.gz_msg.name)):
+			if self.gz_msg.name[c] == model_name:
+				# index of model in gazebo msg
+				g_i = c
+				break
+
+		# sanity check: make sure no negative index
+		if g_i > -1:
+			x = self.gz_msg.pose[g_i].position.x
+			y = self.gz_msg.pose[g_i].position.y
+			p=Point32(x, y, 0.0)
+			self.e_msg.enemy_position[i] = p
+			# get sector
+			self.e_msg.enemy_sectors[i] = self.enu2sector(x, y, 0.0)
+
 	def updateAgentsPos(self):
 		self.d1PosUpdate()
 		self.d2PosUpdate()
 		self.d3PosUpdate()
 		self.e1PosUpdate()
+		self.e2PosUpdate()
+		self.e3PosUpdate()
 
 	# gets agent's gps position, converts it to grid position in ENU
 	def d1poseCb(self, msg):
@@ -220,6 +260,31 @@ class MasterC():
 		# get sector
 		self.e_msg.enemy_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
 
+	def e2poseCb(self, msg):
+		i=1
+		lat = msg.latitude
+		lon = msg.longitude
+		# convert gps to grid position in ENU
+		x_enu, y_enu = hp.LLA_local_deltaxy(self.lat0, self.lon0,  lat,  lon)
+
+		p=Point32(x_enu, y_enu,0.0)
+		self.e_msg.enemy_position[i] = p
+	
+		# get sector
+		self.e_msg.enemy_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
+
+	def e3poseCb(self, msg):
+		i=2
+		lat = msg.latitude
+		lon = msg.longitude
+		# convert gps to grid position in ENU
+		x_enu, y_enu = hp.LLA_local_deltaxy(self.lat0, self.lon0,  lat,  lon)
+
+		p=Point32(x_enu, y_enu,0.0)
+		self.e_msg.enemy_position[i] = p
+	
+		# get sector
+		self.e_msg.enemy_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
 
 	def enu2sector(self,x_enu,y_enu,z_enu):
 		grid_size=[7,7]
@@ -268,20 +333,18 @@ class MasterC():
 		self.master_msg.attacker_cmd=cmd
 
 	def checkEnemyCapture(self):
-		# init
-		self.e_msg.is_captured = []
-		for e in range(self.Ne):
-			self.e_msg.is_captured.append(False)
 		# exhaustive check
 		for e in range(self.Ne):
-			e_x = self.e_msg.enemy_position[e].x
-			e_y = self.e_msg.enemy_position[e].y
-			for d in range(self.Nd):
-				d_x = self.d_msg.defenders_position[d].x
-				d_y = self.d_msg.defenders_position[d].y
-				dist = sqrt( (e_x-d_x)**2+(e_y-d_y)**2 )
-				if (dist <= self.cap_dist):
-					self.e_msg.is_captured[e] = True
+			if (self.e_msg.is_captured[e] == False):
+				#print 'enemy ', e, 'is not captured' 
+				e_x = self.e_msg.enemy_position[e].x
+				e_y = self.e_msg.enemy_position[e].y
+				for d in range(self.Nd):
+					d_x = self.d_msg.defenders_position[d].x
+					d_y = self.d_msg.defenders_position[d].y
+					dist = sqrt( (e_x-d_x)**2+(e_y-d_y)**2 )
+					if (dist <= self.cap_dist):
+						self.e_msg.is_captured[e] = True
 
 		# check if all enemies are captured
 		c = 0
@@ -318,6 +381,13 @@ def main():
 	#rospy.Subscriber('/defender2/mavros/global_position/global', NavSatFix, mObj.d2poseCb)
 	#rospy.Subscriber('/defender3/mavros/global_position/global', NavSatFix, mObj.d3poseCb)
 	#rospy.Subscriber('/attacker1/mavros/global_position/global', NavSatFix, mObj.e1poseCb)
+	
+	k=0
+	while k<100:
+		k=k+1
+		mObj.updateAgentsPos()
+		mObj.rate.sleep()
+	
 
 	# Main loop
 	while not rospy.is_shutdown():
