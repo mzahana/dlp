@@ -33,6 +33,9 @@ class Plotter():
 		# global/local communications
 		self.bGlobal_comms = rospy.get_param('global_comms', True)
 
+		# obtain local estimates of all defenders
+		self.bLocal_estimates = rospy.get_param('use_local_estimates', True)
+
 		# Base & reference sectors
 		self.nBase = rospy.get_param('nBase', 1)
 		self.Base = rospy.get_param('Base', [1])
@@ -76,7 +79,10 @@ class Plotter():
 		elif not self.bLocal_sensing and not self.bGlobal_comms:
 			self.traj_ax.set_title('Agents trajectoris \n Local Communication and Global Sensing')
 		elif self.bLocal_sensing and not self.bGlobal_comms:
-			self.traj_ax.set_title('Agents trajectoris \n Local Communication and Sensing')
+			if self.bLocal_estimates:
+				self.traj_ax.set_title('Agents trajectoris \n Local Communication and Sensing with Local Estimates')
+			else:
+				self.traj_ax.set_title('Agents trajectoris \n Local Communication and Sensing')  
 
 		# create a line object for each agent
 		# list of lines objects for defenders

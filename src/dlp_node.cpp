@@ -525,22 +525,24 @@ int main(int argc, char **argv)
 
 		if (bGlobalComms)
 			problem.update_LP();
-		else
+		else{
 			if (bUseLocalEstimate)
 				problem.update_LP_with_local_estimate();
 			else
 				problem.update_LP_dist();
+		}
 
 		problem.solve_simplex();// faster than interior point
 
 		//problem.solve_intp();
 		if (bGlobalComms)
 			problem.extract_centralized_solution();
-		else
+		else{
 			if (bUseLocalEstimate)
 				problem.extract_local_solution_estimate();
 			else
 				problem.extract_local_solution();
+		}
 
 		//problem.get_d_next_locations(next_loc);
 		neighbors_next_loc = problem.get_neighbor_next_locations();

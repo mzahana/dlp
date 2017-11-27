@@ -229,6 +229,7 @@ DLP::set_Nr(int nr){
 */
 void
 DLP::set_d_velocity(MatrixXf& V){
+	d_velocity = MatrixXf::Constant(Nd,1,1.0);
 	d_velocity = V;
 	return;
 }
@@ -1485,7 +1486,9 @@ DLP::sense_and_estimate_defenders_locations(){
 		printf("[%s]: Building estimates on defenders locations...\n", __FUNCTION__);
 
 	/* at t=0 (beginning of the game), all defenders know each other's positions */
-	if (t0 == 0){
+	if (t0 < 2){
+		d_current_local_position_estimate = MatrixXf::Constant(3,Nd,1.0);
+		d_current_local_sector_estimate = MatrixXf::Constant(Nd,1,1.0);
 		for (int i=0; i < Nd; i++){
 			/* if sensed, use true position */
 			d_current_local_position_estimate(0,i) = d_current_position(0,i); /* update x */
@@ -1496,6 +1499,8 @@ DLP::sense_and_estimate_defenders_locations(){
 			d_current_local_sector_estimate(i,0) = d_current_locations(i,0);
 		}
 		t0++;
+		if (DEBUG)
+			cout << endl<<"["<< __FUNCTION__ << "]" << d_current_local_position_estimate << endl << d_current_local_sector_estimate <<endl;
 		return;
 	}
 
@@ -1536,19 +1541,23 @@ DLP::sense_and_estimate_defenders_locations(){
 	} /* Done finding neighbors */
 
 	/* fill sensed_neighbors */
-	sensed_neighbors = MatrixXf::Constant(N_sensed_neighbors,1,0.0);
-	int k =0;
-	for (int i=0; i<Nd; i++){
-		if ( (i != myID) && (bSensed_defenders[i] == true) ){
-			sensed_neighbors(k,0) = d_current_locations(i,0);
-			k++;
+	if (N_sensed_neighbors > 0){
+		sensed_neighbors = MatrixXf::Constant(N_sensed_neighbors,1,0.0);
+		int k =0;
+		for (int i=0; i<Nd; i++){
+			if ( (i != myID) && (bSensed_defenders[i] == true) ){
+				sensed_neighbors(k,0) = d_current_locations(i,0);
+				k++;
+			}
 		}
 	}
 
 	/* estimate locations of non-sensed defenders based on motion model
 	* use last d_local_prediction+motion model to estimate current location of non-sensed defenders
 	*/
-
+	if (DEBUG)
+		printf("[%s]: Estimating locations of non-sensed defenders...\n", __FUNCTION__);
+	
 	for (int i=0; i < Nd; i++){
 		if (bSensed_defenders[i]){
 			/* if sensed, use true position */
@@ -1558,6 +1567,8 @@ DLP::sense_and_estimate_defenders_locations(){
 
 			/* update current sector estimate */
 			d_current_local_sector_estimate(i,0) = d_current_locations(i,0);
+			if (DEBUG)
+				printf("[%s]: Done setting true locations for sensed defedners.\n", __FUNCTION__);
 		}
 		else{
 		/* if not sensed, estimate current position based on last prediction */
@@ -1568,19 +1579,26 @@ DLP::sense_and_estimate_defenders_locations(){
 			unit_v_2D(0,0) = enu_coord(0,0) - d_current_local_position_estimate(0,i);  unit_v_2D(1,0) = enu_coord(1,0) - d_current_local_position_estimate(1,i);
 			/* get unit vector */
 			unit_v_2D = unit_v_2D / unit_v_2D.norm();
-
+			if (DEBUG)
+				printf("[%s]: Done calculating unit vector for estimated direction.\n", __FUNCTION__);
 			/* update position estimate */
-			d_current_local_position_estimate(0,i) = d_current_local_position_estimate(0,i) + dt * d_velocity(0,i) * unit_v_2D(0,0);
-			d_current_local_position_estimate(1,i) = d_current_local_position_estimate(1,i) + dt * d_velocity(1,i) * unit_v_2D(1,0);
-
+			d_current_local_position_estimate(0,i) = d_current_local_position_estimate(0,i) + dt * d_velocity(i,0) * unit_v_2D(0,0);
+			d_current_local_position_estimate(1,i) = d_current_local_position_estimate(1,i) + dt * d_velocity(i,0) * unit_v_2D(1,0);
+			if (DEBUG)
+				printf("[%s]: Done calculating estimated position.\n", __FUNCTION__);
 
 			/* update sector estimate */
 			enu_coord(0,0) = d_current_local_position_estimate(0,i); /* x */
 			enu_coord(1,0) = d_current_local_position_estimate(1,i); /* y */
 			int s = DLP::get_sector_from_ENU(enu_coord);
 			d_current_local_sector_estimate(i,0) = (float) s;
+			if (DEBUG)
+				printf("[%s]: Done calculating estimated sectors.\n", __FUNCTION__);
 		}
 	}
+
+	if (DEBUG)
+		printf("[%s]: DONE Building estimates on defenders locations...\n", __FUNCTION__);
 
 	return;
 }
@@ -1710,8 +1728,10 @@ DLP::update_LP_with_local_estimate(){
 
 	DLP::setup_optimization_vector();
 
+	DLP::update_collision_constraint();
+
 	/* update glpk problem */
-	DLP::setup_glpk_global_problem();
+	DLP::setup_glpk_local_problem();
 
 	end = clock();
 
@@ -1793,6 +1813,10 @@ DLP::setup_problem(){
 	//high_resolution_clock::time_point t1 = high_resolution_clock::now();
 	clock_t start, end;
 	start  = clock();
+
+	/* matrix initialization */
+	d_local_sector_prediction = MatrixXf::Constant(Nd,1,1.0);
+	d_local_position_prediction = MatrixXf::Constant(3,Nd,1.0);
 
 	DLP::setup_gridMatrix();
 	DLP::setup_input_matrix();
