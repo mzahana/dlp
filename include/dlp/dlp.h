@@ -88,11 +88,13 @@ public:
 	* @param nr number of rows.
 	*/
 	void set_nRows(int nr);
+
 	/**
 	* sets number of grid columns.
 	* @param nc number of columns.
 	*/
 	void set_nCols(int nc);
+
 	/**
 	* sets number of defenders.
 	* @param nd number of defenders.
@@ -103,23 +105,44 @@ public:
 	* @param na number of attackers.
 	*/
 	void set_Ne(int na);
+
 	/**
 	* sets Base sectors
 	* @param nB number of base sectors.
 	* @param B pointer to array of base sectors.
 	*/
 	void set_Base(int nB, MatrixXf& B);
+
 	/**
 	* sets Base reference sectors
 	* @param nBref number of reference sectors.
 	* @param Bref pointer to reference sectors matrix.
 	*/
 	void set_BaseRef(int nB, MatrixXf& Bref);
+
 	/**
 	* sets neighborhood radius.
 	* @param nr radius
 	*/
 	void set_Nr(int nr);
+
+	/**
+	* sets dt.
+	* @param dt time step in seconds
+	*/
+	void set_dt(float t);
+
+	/**
+	* sets defenders current velocities.
+	* @param V matrix of size(Nd,1)
+	*/
+	void set_d_velocity(MatrixXf& V);
+
+	/** Sets current xyz positions of defenders, in local fixed ENU.
+	* @param P matrix of size (3,Nd)
+	*/
+	void set_d_current_position(MatrixXf& P);
+
 	/**
 	* sets current defenders locations.
 	* @param D pointer to array of defenders locations
@@ -130,11 +153,13 @@ public:
 	* @param A pointer to array of attackers locations
 	*/
 	void set_e_current_locations(MatrixXf& A);
+
 	/**
 	* sets game time.
 	* @param t game time in seconds.
 	*/
 	void set_Tgame(float t);
+
 	/**
 	* sets prediction horizon length
 	* @param t in [steps]
@@ -170,6 +195,12 @@ public:
 	* uses Nd, d_current_locations members, sensed_neighbors
 	*/
 	void update_X0_dist();
+
+	/**
+	* sets initial condition vectors, x0 and X0 for local LP, based on estimates of x0.
+	* uses Nd, d_current_local_sector_estimate members
+	*/
+	void update_X0_estimate();
 
 	/**
 	* Get/accessor functions.
@@ -238,6 +269,12 @@ public:
 	void update_LP_dist();
 
 	/**
+	* Update glpk problem. This is the local versoin with local estimates of all defenders states.
+	* Updates the objective vector, and constraints bounds based on X0, Xe
+	*/
+	void update_LP_with_local_estimate();
+
+	/**
 	* solve LP using simplex method
 	*/
 	void solve_simplex();
@@ -262,6 +299,14 @@ public:
 	* updates d_next_local_locations vector
 	*/
 	void extract_local_solution();
+
+	/**
+	* Extract local solution, based on estimates of all defenders.
+	* extract first input, u*[0] at time t=0
+	* extracts optimal next sector from u*[0]
+	* updates d_next_locations matrix. and d_local_position_prediction
+	*/
+	void extract_local_solution_estimate();
 
 	/**
 	* Sets sector locations of sensed neighbors.
@@ -375,6 +420,12 @@ private:
 	int Nd; /**< number of defenders. */
 	int Ne; /**< number of attackers. */
 
+	float dt; /**< time step for motion update */
+
+	int t0;
+
+	MatrixXf d_velocity; /**< current velocity estimate for each defender */
+
 	/**
 	* This agent's current sector location
 	*/
@@ -393,6 +444,42 @@ private:
 	* current defenders locations. Distributed problem.
 	*/
 	MatrixXf d_current_local_locations;
+
+	/** 
+	* Current true locations of all defenders.
+	* Size = (3,Nd)
+	*/
+	MatrixXf d_current_position;
+	
+
+	/**
+	* Current local estimate of all defenders locations
+	* If a teammate's location is sensed, its locatoins is updated in this vector.
+	* Otherwise, a prediction is made based on last sensed/estimated position and a motion model.
+	*/
+	MatrixXf d_current_local_sector_estimate;
+
+	/**
+	* Stores current local estimate of defenders xyz position
+	*/
+	MatrixXf d_current_local_position_estimate;
+
+	/**
+	*
+	*/
+	MatrixXf d_local_position_prediction;
+
+	/**
+	* Stores local prediction of all defenders sectors after executing LP.
+	*/
+	MatrixXf d_local_sector_prediction;
+
+	/**
+	* flags for current sensed neighbors.
+	* vector of booleans. v[i] = 1 if neighbor i is sensed at current time step; zero otherwise.
+	* Its size is equal to number of defenders.
+	*/
+	vector<bool> bSensed_defenders;
 
 	/**
 	* Estimated Neighbors next locations, execluding this agent's location.
@@ -526,7 +613,7 @@ private:
 	SparseMatrix<float> x_obs_s; /**< sparse x_obs */
 
 	/**
-	* Collsiion sectors
+	* Collision sectors
 	*/
 	MatrixXf collision_set;
 
@@ -541,7 +628,7 @@ private:
 	*/
 	MatrixXf u0_opt;
 
-	/**
+	/**use_local_estimate
 	* glpk problem pointer
 	*/
 	glp_prob *lp;
@@ -690,12 +777,25 @@ private:
 	void sense_neighbors();
 
 	/**
+	* Simulates neighbors sensing in neighborhood, and estimates others if not sensed.
+	* It selects agents that belong to sensing neighborhood.
+	* Sensing neighborhood is assumed to be 2 hops away. A hop is defined to be 1-step reachable sectors.
+	* updates the N_sensed_neighbors, sensed_neighbors, d_current_local_estimate
+	* Updates position/sector current estimates of not sensed agents, based on linear motion model.
+	* x_new = x_old + u * v * dt. u is unit vector in the direction to the target (last prediction)
+	* v is current velocity estimates for an agent. Stored in d_velocity
+	* dt is time step, elapsed since last inner loop
+	*/
+	void sense_and_estimate_defenders_locations();
+
+	/**
 	* Simulates local attackers sensing.
 	* It selects attackers (from set of all atrackers) that belong to a local neighborhood.
 	* Sensing/local neighborhood is assumed to be 2 hops away, where 1 hop means reachable sectors per time step.
 	* updated variables: N_sensed_neighbors, sensed_neighbors
 	*/
 	void sense_local_attackers();
+
 };
 
 #endif

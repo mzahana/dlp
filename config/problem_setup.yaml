@@ -21,6 +21,12 @@ origin_shifts: [0.0, 0.0]
 N_defenders: 3
 N_attackers: 3
 
+# defenders velocity [m/s]
+d_velocity: [1.0, 1.0, 1.0]
+
+# use local estimates of all defenders states
+use_local_estimates: True
+
 # count of base sectors
 nBase: 1
 

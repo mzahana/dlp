@@ -15,7 +15,6 @@
 
 /**
 * TODO
-*	- implement utility function to convert sector location to ENU and vice versa.
 */
 
 /**
@@ -27,6 +26,8 @@ DLP::DLP()
 
 	DEFENDER_SIDE = true;
 	myID =1;
+	dt = 1.0/30.0;
+	t0=0;
 
 	DEBUG = false;
 	nRows = 10;
@@ -58,11 +59,15 @@ DLP::DLP()
 	Tgame = 60.0; Tp=3;
 	alpha = -0.99; beta = -0.01;
 
+	/* initial defenders sectors */
 	d_current_locations = MatrixXf::Constant(Nd,1,0);
 	d_current_locations(0,0)=2;
 	d_current_locations(1,0)=6;
 	d_current_locations(2,0)=7;
 	d_next_locations = d_current_locations;
+
+	/* defenders velocity */
+	d_velocity = MatrixXf::Constant(Nd,1,1.0);
 
 	bLocalAttackerSensing = false;
 
@@ -217,6 +222,36 @@ DLP::set_Nr(int nr){
 	Nr = nr;
 	return;
 }
+
+/**
+* sets defenders current velocities.
+* @param V matrix of size(Nd,1)
+*/
+void
+DLP::set_d_velocity(MatrixXf& V){
+	d_velocity = V;
+	return;
+}
+
+/**
+* sets dt.
+* @param dt time step in seconds
+*/
+void
+DLP::set_dt(float t){
+	dt = t;
+	return;
+}
+
+/** Sets current xyz positions of defenders, in local fixed ENU.
+* @param P matrix of size (3,Nd)
+*/
+void
+DLP::set_d_current_position(MatrixXf& P){
+	d_current_position = P;
+	return;
+}
+
 /**
 * sets current defenders locations.
 * @param D pointer to array of defenders locations
@@ -623,6 +658,7 @@ DLP::set_Xref(){
 		printf("[%s]: Done setting Xref.\n", __FUNCTION__);
 	return;
 }
+
 /**
 * sets initial condition vectors, x0 and X0 for centralized LP.
 * uses Nd, d_current_locations members
@@ -693,6 +729,40 @@ DLP::update_X0_dist(){
 
 	if (DEBUG)
 		printf("[%s]: Done updating local X0.\n", __FUNCTION__);
+	return;
+}
+
+/**
+* sets initial condition vectors, x0 and X0 for local LP, based on estimates of x0.
+* uses Nd, d_current_local_sector_estimate members
+*/
+void
+DLP::update_X0_estimate(){
+	if(DEBUG)
+		printf("[%s]: Updating global X0...\n", __FUNCTION__);
+	// initialize vectors to zeros
+	x0 = MatrixXf::Constant(ns,1, 0.0);
+	X0 = MatrixXf::Constant(ns*Tp,1, 0.0);
+	// make usre d_current_location is set
+	assert(d_locIsSet);
+
+	/* sense and estimate defenders locations */
+	DLP::sense_and_estimate_defenders_locations();
+
+	int loc=0;
+	// fill x0: one time step
+	for (int s=0; s< Nd; s++){
+		loc=d_current_local_sector_estimate(s,0)-1; // -1 coz c++ starts at 0
+		x0(loc,0)=1.0;
+		// fill X0: over Tp
+		for (int t=0; t<Tp; t++){
+			X0((t+1)*ns-ns+loc,0)=1.0;
+		}
+	}
+
+	if (DEBUG)
+		printf("[%s]: Done updating X0 estimate.\n", __FUNCTION__);
+
 	return;
 }
 
@@ -1400,6 +1470,122 @@ DLP::sense_neighbors(){
 }
 
 /**
+* Simulates neighbors sensing in neighborhood, and estimates others if not sensed.
+* It selects agents that belong to sensing neighborhood.
+* Sensing neighborhood is assumed to be 2 hops away. A hop is defined to be 1-step reachable sectors.
+* updates the N_sensed_neighbors, sensed_neighbors, d_current_local_estimate
+* Updates position/sector current estimates of not sensed agents, based on linear motion model.
+* x_new = x_old + u * v * dt. u is unit vector in the direction to the target (last prediction)
+* v is current velocity estimates for an agent. Stored in d_velocity
+* dt is time step, elapsed since last inner loop
+*/
+void
+DLP::sense_and_estimate_defenders_locations(){
+	if (DEBUG)
+		printf("[%s]: Building estimates on defenders locations...\n", __FUNCTION__);
+
+	/* at t=0 (beginning of the game), all defenders know each other's positions */
+	if (t0 == 0){
+		for (int i=0; i < Nd; i++){
+			/* if sensed, use true position */
+			d_current_local_position_estimate(0,i) = d_current_position(0,i); /* update x */
+			d_current_local_position_estimate(1,i) = d_current_position(1,i); /* update y */
+			d_current_local_position_estimate(2,i) = d_current_position(2,i); /* update z */
+
+			/* update current sector estimate */
+			d_current_local_sector_estimate(i,0) = d_current_locations(i,0);
+		}
+		t0++;
+		return;
+	}
+
+	// get my neighbor sectors
+	int L =2*Nr; /* radius of sensing; 2 hops */
+	int N =DLP::get_NeighborSectors(my_current_location,L);
+
+	N_sensed_neighbors = 0;
+	MatrixXf unit_v_2D(2,1); /* unit vector in R^2 */
+
+	bSensed_defenders.resize(Nd);
+	/* initialize */
+	for (int i=0; i<Nd; i++){
+		bSensed_defenders.push_back(false);
+	}
+
+	/* loop over all defenders. Sensed ones are flagged 1. Zero otherwise */
+	for (int i=0; i<Nd; i++){
+
+		/* if it is me, i know my location for sure */
+		if (i == myID){
+			bSensed_defenders[i] = true;
+		}
+		else{
+			/* defender i sector */
+			float d_sector = d_current_locations(i,0);
+			/* check if a defender is in my neighborhood */
+			for (int j=0; j<N; j++){
+				if (d_sector == neighbor_sectors(j,0)){
+					bSensed_defenders[i] = true;
+					N_sensed_neighbors++;
+					break;
+				}
+
+			}/* done looping over neighbor sector */
+		}
+
+	} /* Done finding neighbors */
+
+	/* fill sensed_neighbors */
+	sensed_neighbors = MatrixXf::Constant(N_sensed_neighbors,1,0.0);
+	int k =0;
+	for (int i=0; i<Nd; i++){
+		if ( (i != myID) && (bSensed_defenders[i] == true) ){
+			sensed_neighbors(k,0) = d_current_locations(i,0);
+			k++;
+		}
+	}
+
+	/* estimate locations of non-sensed defenders based on motion model
+	* use last d_local_prediction+motion model to estimate current location of non-sensed defenders
+	*/
+
+	for (int i=0; i < Nd; i++){
+		if (bSensed_defenders[i]){
+			/* if sensed, use true position */
+			d_current_local_position_estimate(0,i) = d_current_position(0,i); /* update x */
+			d_current_local_position_estimate(1,i) = d_current_position(1,i); /* update y */
+			d_current_local_position_estimate(2,i) = d_current_position(2,i); /* update z */
+
+			/* update current sector estimate */
+			d_current_local_sector_estimate(i,0) = d_current_locations(i,0);
+		}
+		else{
+		/* if not sensed, estimate current position based on last prediction */
+
+			/* get coordinates of last predicted sector */
+			enu_coord = DLP::get_ENU_from_sector( d_local_sector_prediction(i,0) );
+			/* get direction from current position, only in 2-D */
+			unit_v_2D(0,0) = enu_coord(0,0) - d_current_local_position_estimate(0,i);  unit_v_2D(1,0) = enu_coord(1,0) - d_current_local_position_estimate(1,i);
+			/* get unit vector */
+			unit_v_2D = unit_v_2D / unit_v_2D.norm();
+
+			/* update position estimate */
+			d_current_local_position_estimate(0,i) = d_current_local_position_estimate(0,i) + dt * d_velocity(0,i) * unit_v_2D(0,0);
+			d_current_local_position_estimate(1,i) = d_current_local_position_estimate(1,i) + dt * d_velocity(1,i) * unit_v_2D(1,0);
+
+
+			/* update sector estimate */
+			enu_coord(0,0) = d_current_local_position_estimate(0,i); /* x */
+			enu_coord(1,0) = d_current_local_position_estimate(1,i); /* y */
+			int s = DLP::get_sector_from_ENU(enu_coord);
+			d_current_local_sector_estimate(i,0) = (float) s;
+		}
+	}
+
+	return;
+}
+
+/**
 * Simulates local attackers sensing.
 * It selects attackers (from set of all atrackers) that belong to a local neighborhood.
 * Sensing/local neighborhood is assumed to be 2 hops away, where 1 hop means reachable sectors per time step.
@@ -1478,7 +1664,47 @@ DLP::update_LP(){
 	clock_t start, end;
 	start = clock();
 
-	DLP::update_X0();
+	DLP::update_X0();		
+
+	DLP::update_Xe();
+
+	DLP::setup_optimization_vector();
+
+	/* update glpk problem */
+	DLP::setup_glpk_global_problem();
+
+	end = clock();
+
+	if (DEBUG){
+		cout << "[" << __FUNCTION__ << "] Done updating global LP in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+		cout << "================================== \n";
+	}
+
+	return;
+
+}
+
+
+/**
+* Update glpk problem. This is the local versoin with local estimates of all defenders states.
+* Updates the objective vector, and constraints bounds based on X0, Xe
+*/
+void
+DLP::update_LP_with_local_estimate(){
+	if (DEBUG){
+		printf("[%s]: Updating global LP...\n", __FUNCTION__);
+		printf("==================================");
+	}
+
+	int nEq = ns*Tp; /* number of Eq constraints */
+	int nIneq = ns*Tp; /* number of Ineq constraints */
+
+	/* prerequisit updates */
+	clock_t start, end;
+	start = clock();
+
+	DLP::update_X0_estimate();
+	
 
 	DLP::update_Xe();
 
@@ -1707,6 +1933,87 @@ DLP::extract_centralized_solution(){
 			*/
 		} /* done looping over neighbors */
 	} /* done looping over d_next_locations */
+
+	
+
+	/* get this agent's next sector */
+	my_next_location = d_next_locations(myID,0);
+	cout <<endl;
+	return;
+}
+
+
+/**
+* Extract local solution, based on estimates of all defenders.
+* extract first input, u*[0] at time t=0
+* extracts optimal next sector from u*[0]
+* updates d_next_locations matrix. and d_local_position_prediction
+*/
+void
+DLP::extract_local_solution_estimate(){
+	// initialize first optimal input vector
+	u0_opt = MatrixXf::Constant(nu,1,0.0);
+	// init d_next_locations
+	d_next_locations = MatrixXf::Constant(Nd,1,0.0);
+	//fill u0_opt
+	for (int i=0; i<nu; i++){
+		u0_opt(i,0)=glp_get_col_prim(lp, (i+1)+ns*Tp);
+	}
+
+	// DEBUG
+	/*
+	cout << "PRINT SOLUTION -----" << endl;
+	for (int i=0; i<(nu+ns)*Tp; i++){
+		cout << glp_get_col_prim(lp, i+1)<< endl;
+	}
+	cout << "END OF SOL--------"<< endl;
+	*/
+
+
+	/**
+	* find next optimal sectors from u0_opt.
+	* for each sector in d_current_locations, find inputs leading to neighbors
+	* among neighbors, select sector that has highest input amount
+	*/
+	int si, sj; /* sectors */
+	int N; /* count of neighbors */
+	float min_value;
+	for (int a=0; a<Nd; a++){
+		si = d_current_local_sector_estimate(a,0);
+		// get neighbors
+		N = DLP::get_NeighborSectors(si);
+		// // init min value of optimal inputs
+		min_value = 0.0;
+		//cout <<endl<< "[DEBUG]:----------"<<endl;
+		//cout << "[DEBUG] u0_N = "<< endl;
+		/**
+		* NOTE: Here we initialize next location using the current location.
+		* if all optimal inputs that take s_i to s_j \in N(s_i) are zeros, then
+		* next location should not change.
+		* Hence, it's equal to current location.
+		*/
+		d_next_locations(a,0) = d_current_local_sector_estimate(a,0);
+		for (int j=0; j<N; j++){
+			sj = neighbor_sectors(j,0);
+			//cout << u0_opt(si*ns-ns+(sj-1),0) << " , ";
+			if( u0_opt(si*ns-ns+(sj-1),0) > min_value ){
+				min_value = u0_opt(si*ns-ns+(sj-1),0);
+				// will only update if at least one input > 0
+				d_next_locations(a,0) = sj;
+			}
+			d_local_sector_prediction(a,0) = d_next_locations(a,0);
+			/* get sector's xyz */
+			enu_coord = DLP::get_ENU_from_sector((int)d_next_locations(a,0));
+			d_local_position_prediction(0,a) = enu_coord(0,0); /* x */
+			d_local_position_prediction(1,a) = enu_coord(1,0); /* y */
+
+			/* TODO: implement the case if equal weights are assigned
+			* to neighbors. Probably, choosing sector that is closer to base? or an attacker?!
+			*/
+		} /* done looping over neighbors */
+	} /* done looping over d_next_locations */
+
+	
 
 	/* get this agent's next sector */
 	my_next_location = d_next_locations(myID,0);

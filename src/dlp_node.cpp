@@ -32,8 +32,9 @@
 
 
 /**
- * This is a ROS skelton code for publisher subscriber.
- * TODO: Need to to adapt to DLP.
+ * TODO
+ * add a ROS paramter that is used checks if local state estimate (of defenders) is required
+ * WHY origin shifts are hardcoded to zero in line 507 ??????
  */
 
 /**
@@ -217,6 +218,10 @@ int main(int argc, char **argv)
 	bool bLocalSensing;
 	nh.param("local_sensing", bLocalSensing, false);
 
+	/* using local estimates of all defenders states */
+	bool bUseLocalEstimate;
+	nh.param("use_local_estimates", bUseLocalEstimate, true);
+
 	std::vector<int> grid_size, default_grid_size;
 	// default to 7x7 grid
 	default_grid_size.push_back(7); default_grid_size.push_back(7);
@@ -235,6 +240,10 @@ int main(int argc, char **argv)
 	default_baseRef.push_back(2); default_baseRef.push_back(8); default_baseRef.push_back(9);
 	nh.param< vector<int> >("Base", base, default_base);
 	nh.param< vector<int> >("BaseRef", baseRef, default_baseRef);
+
+	std::vector<float> d_velocity, default_d_velocity;
+	default_d_velocity.push_back(1.0); default_d_velocity.push_back(1.0); default_d_velocity.push_back(1.0);
+	nh.param< vector<float> >("d_velocity", d_velocity, default_d_velocity);
 
 	int Tp;
 	nh.param("Tp", Tp, 2);
@@ -324,6 +333,15 @@ int main(int argc, char **argv)
 	problem.set_Nd(Nd);
 	problem.set_Ne(Ne);
 
+	/* update time stamp */
+	problem.set_dt(1.0/update_freq);
+
+	MatrixXf d_velocity_M = MatrixXf::Constant(Nd,1,1.0);
+	for (int i=0; i<Nd; i++)
+		d_velocity_M(i,0) = d_velocity[i];
+
+	problem.set_d_velocity(d_velocity_M);
+
 	MatrixXf Base(nBase,1);
 	for (int i=0; i<nBase; i++){
 		Base(i,0) = base[i];// base filled from ros params
@@ -343,6 +361,8 @@ int main(int argc, char **argv)
 	MatrixXf temp_eloc(Ne,1);
 	MatrixXf e_predicted_loc(Ne,1);
 	MatrixXf dloc(Nd,1);
+
+	MatrixXf d_current_position(3,Nd);
 
 	MatrixXf sensedN;
 	MatrixXf neighbors_next_loc;
@@ -427,8 +447,12 @@ int main(int argc, char **argv)
 			enu(0,0) = cb.d_loc_msg.defenders_position[i].x;
 			enu(1,0) = cb.d_loc_msg.defenders_position[i].y;
 			enu(2,0) = cb.d_loc_msg.defenders_position[i].z;
+			d_current_position(0,i) = enu(0,0); /* x */
+			d_current_position(1,i) = enu(1,0); /* y */
+			d_current_position(2,i) = enu(2,0); /* z */
 			dloc(i,0) =problem.get_sector_from_ENU(enu);
 		}
+		problem.set_d_current_position(d_current_position);
 		if (problem.DEBUG)
 			cout << "[dlp_node] [loop] d_loc:  " << dloc.transpose() << "\n";
 
@@ -480,7 +504,7 @@ int main(int argc, char **argv)
 			enu(0,0)= hp.dx;
 			enu(1,0)= hp.dy;
 			enu(2,0)= cb.local_enu_msg.pose.position.z;
-			problem.set_origin_shifts(0.0, 0.0);
+			problem.set_origin_shifts(0.0, 0.0); /* TODO WHY???? */
 		}
 		else{
 			enu(0,0)= cb.local_enu_msg.pose.position.x;
@@ -502,7 +526,10 @@ int main(int argc, char **argv)
 		if (bGlobalComms)
 			problem.update_LP();
 		else
-			problem.update_LP_dist();
+			if (bUseLocalEstimate)
+				problem.update_LP_with_local_estimate();
+			else
+				problem.update_LP_dist();
 
 		problem.solve_simplex();// faster than interior point
 
@@ -510,7 +537,10 @@ int main(int argc, char **argv)
 		if (bGlobalComms)
 			problem.extract_centralized_solution();
 		else
-			problem.extract_local_solution();
+			if (bUseLocalEstimate)
+				problem.extract_local_solution_estimate();
+			else
+				problem.extract_local_solution();
 
 		//problem.get_d_next_locations(next_loc);
 		neighbors_next_loc = problem.get_neighbor_next_locations();
