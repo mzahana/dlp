@@ -1490,7 +1490,7 @@ DLP::sense_and_estimate_defenders_locations(){
 		d_current_local_position_estimate = MatrixXf::Constant(3,Nd,1.0);
 		d_current_local_sector_estimate = MatrixXf::Constant(Nd,1,1.0);
 		for (int i=0; i < Nd; i++){
-			/* if sensed, use true position */
+			/*use true position */
 			d_current_local_position_estimate(0,i) = d_current_position(0,i); /* update x */
 			d_current_local_position_estimate(1,i) = d_current_position(1,i); /* update y */
 			d_current_local_position_estimate(2,i) = d_current_position(2,i); /* update z */
@@ -1511,7 +1511,8 @@ DLP::sense_and_estimate_defenders_locations(){
 	N_sensed_neighbors = 0;
 	MatrixXf unit_v_2D(2,1); /* unit vector in R^2 */
 
-	bSensed_defenders.resize(Nd);
+	//bSensed_defenders.resize(Nd);
+	bSensed_defenders.clear();
 	/* initialize */
 	for (int i=0; i<Nd; i++){
 		bSensed_defenders.push_back(false);
