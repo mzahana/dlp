@@ -1302,6 +1302,7 @@ DLP::setup_glpk_local_problem(){
 			}
 		}
 	}
+	
 
 
 	/*
@@ -1316,10 +1317,12 @@ DLP::setup_glpk_local_problem(){
 	// check if matrix is correct
 	//int chk= glp_check_dup(nEq+nIneq, (ns+nu)*Tp, nnzEq+nnzIneq, ia, ja);
 	glp_load_matrix(lp, nnzEq+nnzIneq, ia, ja, ar);
+
 	if ( !(x_obs_s.nonZeros()>0)){
 		int r[1+1]; r[1] = nEq+nIneq+1;
 		glp_del_rows(lp, 1, r);
 	}
+	
 
 	if (DEBUG)
 		printf("[%s]: Done setting up local GLPK problem.\n", __FUNCTION__);

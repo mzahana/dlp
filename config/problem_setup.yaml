@@ -1,5 +1,5 @@
 # Setup problem/game parameters before running the dlp_node
-debug: True
+debug: False
 # unique agent ID, starts from 0
 myID: 0
 
@@ -21,8 +21,8 @@ sector_size: [10.0, 10.0]
 #origin_shifts: [0.0, 0.0]
 origin_shifts: [50.0, 50.0]
 
-N_defenders: 1
-N_attackers: 1
+N_defenders: 3
+N_attackers: 3
 
 # defenders velocity [m/s]
 d_velocity: [3.0, 3.0, 3.0]

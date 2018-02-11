@@ -8,7 +8,7 @@
 
     <arg name="est" default="ekf2"/>
     <arg name="vehicle" default="iris"/>
-    <arg name="world" default="$(find dlp)/worlds/battle_person.world"/>
+    <arg name="world" default="$(find dlp)/worlds/big_world.world"/>
 
     <arg name="headless" default="false"/>
     <arg name="gui" default="true"/>
@@ -37,8 +37,8 @@
         <arg name="ID" value="1"/>
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
-            <arg name="x" value="1"/>
-            <arg name="y" value="9"/>
+            <arg name="x" value="-20"/>
+            <arg name="y" value="30"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>
             <arg name="P" value="0"/>
@@ -70,8 +70,8 @@
         <arg name="ID" value="2"/>
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
-            <arg name="x" value="11"/>
-            <arg name="y" value="3"/>
+            <arg name="x" value="-20"/>
+            <arg name="y" value="-30"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>
             <arg name="P" value="0"/>
@@ -104,8 +104,8 @@
         <arg name="ID" value="3"/>
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
-            <arg name="x" value="7"/>
-            <arg name="y" value="9"/>
+            <arg name="x" value="0"/>
+            <arg name="y" value="30"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>
             <arg name="P" value="0"/>
@@ -137,8 +137,8 @@
         <arg name="ID" value="4"/>
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
-            <arg name="x" value="13"/>
-            <arg name="y" value="9"/>
+            <arg name="x" value="20"/>
+            <arg name="y" value="30"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>
             <arg name="P" value="0"/>
@@ -170,8 +170,8 @@
         <arg name="ID" value="5"/>
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
-            <arg name="x" value="8"/>
-            <arg name="y" value="3"/>
+            <arg name="x" value="0"/>
+            <arg name="y" value="-30"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>
             <arg name="P" value="0"/>
@@ -204,8 +204,8 @@
         <arg name="ID" value="6"/>
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
-            <arg name="x" value="5"/>
-            <arg name="y" value="3"/>
+            <arg name="x" value="20"/>
+            <arg name="y" value="-30"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>
             <arg name="P" value="0"/>
