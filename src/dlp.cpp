@@ -377,6 +377,25 @@ DLP::get_neighbor_next_locations(){
 	return neighbor_next_locations;
 }
 
+/** Set static obstacles
+*/
+void
+DLP::set_static_obstacles(int N, MatrixXf& mat){
+
+	if (DEBUG)
+		printf("[%s]: Setting static obstacles...\n",__FUNCTION__);
+
+	if (N >= 0 && N < (nRows*nCols))
+		N_static_obs = N;
+
+	static_obstacle_set = mat;
+
+	if (DEBUG)
+		printf("[%s]: Done setting up grid matrix...\n",__FUNCTION__);
+
+	return;
+}
+
 /**
 * constructs sectors matrix, S.
 */
@@ -1146,7 +1165,7 @@ DLP::setup_glpk_global_problem(){
 	int nEq = ns*Tp; /* number of Eq constraints. */
 	int nIneq = ns*Tp; /* number of Ineq constraints */
 	int nConst = 2*ns*Tp + 2*(ns+nu)*Tp;
-	glp_add_rows(lp, nEq+nIneq);
+	glp_add_rows(lp, nEq+nIneq+1); // +1 for static obstacle constraint
 	glp_add_cols(lp, (ns+nu)*Tp);
 
 	/* NOTE: glpk indexing starts from 1 */
@@ -1162,6 +1181,9 @@ DLP::setup_glpk_global_problem(){
 		glp_set_row_bnds(lp, j+1, GLP_UP, 0.0, X0(i,0));
 	}
 
+	// set equality/obstacle constraint
+	glp_set_row_bnds(lp, nEq+nIneq+1, GLP_FX, 0.0, 0.0);
+
 	// set box constraints and objective vector
 	for (int i=0; i<(ns+nu)*Tp; i++){
 		glp_set_col_bnds(lp, i+1, GLP_DB, 0.0, 1.0);
@@ -1173,7 +1195,7 @@ DLP::setup_glpk_global_problem(){
 	* in this implementation, it contains dynamics and flow constraints only.
 	*/
 	// number of nonzero values
-	int nnzEq = Ad_s.nonZeros();
+	int nnzEq = Ad_s.nonZeros()+ X_static_obs_s.nonZeros();
 	int nnzIneq = Af_s.nonZeros();
 
 	int ia[1+nnzEq+nnzIneq], ja[1+nnzEq+nnzIneq];
@@ -1206,6 +1228,17 @@ DLP::setup_glpk_global_problem(){
 		ar[nnzEq+nnzIneq-i] = 1.0;
 	}
 	*/
+
+	// fill static obstacle avoidance constraint
+	if (X_static_obs_s.nonZeros()>0){
+		for (int k=0; k<X_static_obs_s.outerSize(); ++k){
+			for (SparseMatrix<float>::InnerIterator it2(X_static_obs_s,k); it2; ++it2)
+			{
+				ia[ct+1] =2*ns*Tp+1; ja[ct+1] =it2.row()+1; ar[ct+1] =1.0;
+				ct++;
+			}
+		}
+	}
 
 
 	// check if matrix is correct
@@ -1237,7 +1270,7 @@ DLP::setup_glpk_local_problem(){
 	int nEq = ns*Tp; /* number of Eq constraints. */
 	int nIneq = ns*Tp; /* number of Ineq constraints */
 	int nConst = 2*ns*Tp + 2*(ns+nu)*Tp;
-	glp_add_rows(lp, nEq+nIneq+1);//+1 for collision consttraint
+	glp_add_rows(lp, nEq+nIneq+2);//+1 for collision consttraint, +1 for static obstacles constraint
 	glp_add_cols(lp, (ns+nu)*Tp);
 
 	/* NOTE: glpk indexing starts from 1 */
@@ -1256,6 +1289,9 @@ DLP::setup_glpk_local_problem(){
 	// set equality/collision constraint
 	glp_set_row_bnds(lp, nEq+nIneq+1, GLP_FX, 0.0, 0.0);
 
+	// set equality: static obstacle avoidance constraint
+	glp_set_row_bnds(lp, nEq+nIneq+2, GLP_FX, 0.0, 0.0);
+
 	// set box constraints and objective vector
 	for (int i=0; i<(ns+nu)*Tp; i++){
 		glp_set_col_bnds(lp, i+1, GLP_DB, 0.0, 1.0);
@@ -1267,7 +1303,7 @@ DLP::setup_glpk_local_problem(){
 	* in this implementation, it contains dynamics and flow constraints only.
 	*/
 	// number of nonzero values
-	int nnzEq = Ad_s.nonZeros() + x_obs_s.nonZeros();
+	int nnzEq = Ad_s.nonZeros() + x_obs_s.nonZeros() + X_static_obs_s.nonZeros();
 	int nnzIneq = Af_s.nonZeros();
 
 	int ia[1+nnzEq+nnzIneq], ja[1+nnzEq+nnzIneq];
@@ -1292,12 +1328,23 @@ DLP::setup_glpk_local_problem(){
 		}
 	}
 
-	// fill colliion constraint
+	// fill collision constraint
 	if (x_obs_s.nonZeros()>0){
 		for (int k=0; k<x_obs_s.outerSize(); ++k){
 			for (SparseMatrix<float>::InnerIterator it2(x_obs_s,k); it2; ++it2)
 			{
 				ia[ct+1] =2*ns*Tp+1; ja[ct+1] =it2.row()+1; ar[ct+1] =1.0;
+				ct++;
+			}
+		}
+	}
+
+	// fill static obstacle avoidance constraint
+	if (X_static_obs_s.nonZeros()>0){
+		for (int k=0; k<X_static_obs_s.outerSize(); ++k){
+			for (SparseMatrix<float>::InnerIterator it2(X_static_obs_s,k); it2; ++it2)
+			{
+				ia[ct+1] =2*ns*Tp+2; ja[ct+1] =it2.row()+1; ar[ct+1] =1.0;
 				ct++;
 			}
 		}
@@ -1318,14 +1365,47 @@ DLP::setup_glpk_local_problem(){
 	//int chk= glp_check_dup(nEq+nIneq, (ns+nu)*Tp, nnzEq+nnzIneq, ia, ja);
 	glp_load_matrix(lp, nnzEq+nnzIneq, ia, ja, ar);
 
+	/*
 	if ( !(x_obs_s.nonZeros()>0)){
 		int r[1+1]; r[1] = nEq+nIneq+1;
 		glp_del_rows(lp, 1, r);
 	}
-	
+
+	if ( !(X_static_obs_s.nonZeros()>0) || N_static_obs == 0){
+		int r[1+1]; r[1] = nEq+nIneq+2;
+		glp_del_rows(lp, 1, r);
+	}
+	*/
 
 	if (DEBUG)
 		printf("[%s]: Done setting up local GLPK problem.\n", __FUNCTION__);
+
+	return;
+}
+
+/**
+* Updates static obstacle constraint vector
+*/
+void
+DLP::update_static_obstacles_constraints(){
+	if(DEBUG)
+		printf("[%s]: Updating static obstacle vector...\n", __FUNCTION__);
+	// initialize vector to zeros
+	X_static_obs = MatrixXf::Constant(ns*Tp,1, 0.0);
+
+	int loc=0; // index location of sector in the vector
+	for (int o=0; o< N_static_obs; o++){
+		loc=static_obstacle_set(o,0)-1; // -1 coz c++ starts at 0
+		// fill X_static_obs: over Tp
+		for (int t=0; t<Tp; t++){
+			X_static_obs((t+1)*ns-ns+loc,0)=1.0;
+		}
+	}
+
+	X_static_obs_s = X_static_obs.sparseView();
+
+	if (DEBUG)
+		printf("[%s]: Done updating static obstacle vector is DONE.\n", __FUNCTION__);
 
 	return;
 }
@@ -1692,6 +1772,8 @@ DLP::update_LP(){
 
 	DLP::setup_optimization_vector();
 
+	DLP::update_static_obstacles_constraints();
+
 	/* update glpk problem */
 	DLP::setup_glpk_global_problem();
 
@@ -1734,6 +1816,8 @@ DLP::update_LP_with_local_estimate(){
 
 	DLP::update_collision_constraint();
 
+	DLP::update_static_obstacles_constraints();
+
 	/* update glpk problem */
 	DLP::setup_glpk_local_problem();
 
@@ -1770,6 +1854,8 @@ DLP::update_LP_dist(){
 	DLP::setup_optimization_vector();// C vector
 
 	DLP::update_collision_constraint();
+
+	DLP::update_static_obstacles_constraints();
 
 
 	/* NOTE: glpk indexing starts from 1 */
@@ -1837,6 +1923,8 @@ DLP::setup_problem(){
 		DLP::setup_defenders_feedback_matrix();
 	DLP::update_Xe();
 	DLP::setup_optimization_vector();
+
+	DLP::update_static_obstacles_constraints();
 
 	DLP::setup_glpk_local_problem();
 //	high_resolution_clock::time_point t2 = high_resolution_clock::now();

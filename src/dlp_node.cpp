@@ -241,6 +241,15 @@ int main(int argc, char **argv)
 	nh.param< vector<int> >("Base", base, default_base);
 	nh.param< vector<int> >("BaseRef", baseRef, default_baseRef);
 
+	/**	
+	* loading static obstacles ROS parameters
+	*/
+	int N_static_obs;
+	nh.param("Nobs_sectors", N_static_obs, 3);
+	std::vector<int> obstacles_set, obstacles_set_default;
+	obstacles_set_default.push_back(1); obstacles_set_default.push_back(2); obstacles_set_default.push_back(3);
+	nh.param< vector<int> >("obs_sectors", obstacles_set, obstacles_set_default);
+
 	std::vector<float> d_velocity, default_d_velocity;
 	default_d_velocity.push_back(1.0); default_d_velocity.push_back(1.0); default_d_velocity.push_back(1.0);
 	nh.param< vector<float> >("d_velocity", d_velocity, default_d_velocity);
@@ -420,6 +429,13 @@ int main(int argc, char **argv)
 	problem.set_d_current_locations(dloc);
 	problem.set_e_current_locations(eloc);
 	problem.set_my_current_location(dloc(myID,0));
+
+	/* set static obstacles sectors */
+	MatrixXf obstacles_sectors(N_static_obs,1); 
+	for (int i=0; i< N_static_obs; i++)
+		obstacles_sectors(i,0) = obstacles_set[i];
+	
+	problem.set_static_obstacles(N_static_obs, obstacles_sectors);
 
 	problem.setup_problem();
 

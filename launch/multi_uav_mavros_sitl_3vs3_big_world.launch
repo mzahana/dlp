@@ -8,7 +8,7 @@
 
     <arg name="est" default="ekf2"/>
     <arg name="vehicle" default="iris"/>
-    <arg name="world" default="$(find dlp)/worlds/big_world.world"/>
+    <arg name="world" default="$(find dlp)/worlds/big_world_2.world"/>
 
     <arg name="headless" default="false"/>
     <arg name="gui" default="true"/>
@@ -37,7 +37,7 @@
         <arg name="ID" value="1"/>
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
-            <arg name="x" value="-20"/>
+            <arg name="x" value="-40"/>
             <arg name="y" value="30"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>
@@ -70,7 +70,7 @@
         <arg name="ID" value="2"/>
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
-            <arg name="x" value="-20"/>
+            <arg name="x" value="-40"/>
             <arg name="y" value="-30"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>
@@ -137,7 +137,7 @@
         <arg name="ID" value="4"/>
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
-            <arg name="x" value="20"/>
+            <arg name="x" value="40"/>
             <arg name="y" value="30"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>
@@ -171,7 +171,7 @@
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
             <arg name="x" value="0"/>
-            <arg name="y" value="-30"/>
+            <arg name="y" value="-40"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>
             <arg name="P" value="0"/>
@@ -204,7 +204,7 @@
         <arg name="ID" value="6"/>
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
-            <arg name="x" value="20"/>
+            <arg name="x" value="40"/>
             <arg name="y" value="-30"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>

@@ -39,8 +39,12 @@ class Plotter():
 		# Base & reference sectors
 		self.nBase = rospy.get_param('nBase', 1)
 		self.Base = rospy.get_param('Base', [1])
-		self.nBaseRef = rospy.get_param('nBase', 3)
-		self.BaseRef = rospy.get_param('Base', [1])
+		self.nBaseRef = rospy.get_param('nBaseRef', 3)
+		self.BaseRef = rospy.get_param('BaseRef', [1])
+
+		# Static obstacles
+		self.Nobs_sectors = rospy.get_param('Nobs_sectors',3)
+		self.obs_sectors = rospy.get_param('obs_sectors',[1,2,3])
 
 		# defenders/attackers states e.g. locations
 		self.d_msg = DefendersState()
@@ -102,16 +106,22 @@ class Plotter():
 			self.e_tr[e].set_linestyle('')
 			self.e_tr[e].set_markeredgecolor((1,0,0)) # red
 
+		# draw obstacles
+		for i in range(self.Nobs_sectors):
+			s_b = self.obs_sectors[i] # base sector
+			x,y,z = self.sector2normalized_enu(s_b)
+			self.traj_ax.scatter([x],[y], marker='o', s=200, facecolors='black', edgecolors = (0,0,0,1))
+
 		# draw base and base refs
 		for ib in range(self.nBase):
 			s_b = self.Base[ib] # base sector
 			x,y,z = self.sector2normalized_enu(s_b)
-			self.traj_ax.scatter([x],[y], marker='o', s=500, facecolors='green', edgecolors = (0,0,0,1))
+			self.traj_ax.scatter([x],[y], marker='o', s=200, facecolors='green', edgecolors = (0,0,0,1))
 
 		for ib in range(self.nBaseRef):
 			s_b = self.BaseRef[ib] # base sector
 			x,y,z = self.sector2normalized_enu(s_b)
-			self.traj_ax.scatter([x],[y], marker='o', s=500, facecolors='yellow', edgecolors = (0,0,0,1))
+			self.traj_ax.scatter([x],[y], marker='o', s=200, facecolors='yellow', edgecolors = (0,0,0,1))
 
 		# initial draw
 		self.fig.canvas.draw()

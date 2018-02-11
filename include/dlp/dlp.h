@@ -120,6 +120,10 @@ public:
 	*/
 	void set_BaseRef(int nB, MatrixXf& Bref);
 
+	/** Set static obstacles
+	*/
+	void set_static_obstacles(int N, MatrixXf& mat);
+
 	/**
 	* sets neighborhood radius.
 	* @param nr radius
@@ -635,6 +639,22 @@ private:
 	MatrixXf X_obs;
 
 	/**
+	 Static obstacles sectors set
+	*/
+	MatrixXf static_obstacle_set;
+
+	/**
+	* Numner of static obstacles
+	*/
+	int N_static_obs;
+
+	/**
+	* Static obstacle vector, over a time horizon Tp
+	*/
+	MatrixXf X_static_obs;
+	SparseMatrix<float> X_static_obs_s; /**< sparse X_static_obs */
+
+	/**
 	* first optimal input u*[0]
 	*/
 	MatrixXf u0_opt;
@@ -779,6 +799,11 @@ private:
 	* the result set is execluded from next possible sectors.
 	*/
 	void update_collision_constraint();
+
+	/**
+	* Updates static obstacle constraint vector
+	*/
+	void update_static_obstacles_constraints();
 
 	/**
 	* It selects agents that belong to sensing neighborhood
