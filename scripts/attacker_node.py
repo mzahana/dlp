@@ -129,7 +129,7 @@ class Utils():
 		self.setp.type_mask	= int('010111111000', 2)
 
 		# get altitude setpoint from parameters
-		self.altSp = 1.0
+		self.altSp = rospy.get_param('altitude_setpoint')
 		self.setp.position.z = self.altSp
 
 	# Callbacks

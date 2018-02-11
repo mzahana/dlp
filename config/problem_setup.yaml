@@ -1,37 +1,41 @@
 # Setup problem/game parameters before running the dlp_node
-debug: False
+debug: True
 # unique agent ID, starts from 0
 myID: 0
 
 # [rows, columns]
-grid_size: [7,7]
+#grid_size: [7,7]
+grid_size: [10,10]
 
 # sector size (x,y) in ENU, in meter(s)
 # for hawrdware test
 #sector_size: [0.85, 0.85]
 # for simulation
-sector_size: [2.0, 2.0]
+#sector_size: [2.0, 2.0]
+sector_size: [10.0, 10.0]
 
 # origin shifts (dx,dy) from (0,0) in ENU, in meter(s)
 # for hardware experiment
 #origin_shifts: [3.0, 3.0]
 # for simulation
-origin_shifts: [0.0, 0.0]
+#origin_shifts: [0.0, 0.0]
+origin_shifts: [50.0, 50.0]
 
-N_defenders: 3
-N_attackers: 3
+N_defenders: 1
+N_attackers: 1
 
 # defenders velocity [m/s]
-d_velocity: [1.0, 1.0, 1.0]
+d_velocity: [3.0, 3.0, 3.0]
 
 # use local estimates of all defenders states
-use_local_estimates: True
+use_local_estimates: False
 
 # count of base sectors
 nBase: 1
 
 # set of base sectors 
-Base: [11]
+#Base: [11]
+Base: [25]
 
 # count of base reference sectors
 #nBaseRef: 3
@@ -39,7 +43,8 @@ nBaseRef: 8
 
 # set of base referense sectors
 #BaseRef: [2,8,9]
-BaseRef: [3,4,5,10,12,17,18,19]
+#BaseRef: [3,4,5,10,12,17,18,19]
+BaseRef: [14,15,16,24,26,34,35,36]
 
 # strategy weights
 alpha: -0.99
@@ -51,10 +56,10 @@ Tp: 4
 neighbor_radius: 1
 
 # defenders global/local sensing of enemies
-local_sensing: False
+local_sensing: True
 
 # local vs. global communication between defenders (centralized vs decomposed approach)
-global_comms: True
+global_comms: False
 
 # maximum ROS loop frequency
 update_freq: 50
@@ -63,13 +68,13 @@ update_freq: 50
 home: [1.0, 1.0]
 
 # fixed altitude setpoint
-altitude_setpoint: 1.0
+altitude_setpoint: 5.0
 
 # use joystick
 enable_joystick: False
 
 # whether to use GPS or directly local_position coordinates
-# False for hardware test
+# False for indoor hardware test
 use_gps: True
 
 # whether to used simulated position, set True if using gazebo
@@ -77,14 +82,20 @@ use_gps: True
 use_sim: True
 
 # lat/long of zero position
-lat0: 47.397742
-long0: 8.5455933
+#lat0: 47.397742
+#long0: 8.5455933
+lat0: 47.3972911
+long0: 8.5449276
 
 # fence for simulation
-fence_min_x: 0
-fence_max_x: 14.0
-fence_min_y: 0.0
-fence_max_y: 14.0
+#fence_min_x: 0
+#fence_max_x: 14.0
+#fence_min_y: 0.0
+#fence_max_y: 14.0
+fence_min_x: -50.0
+fence_max_x: 50.0
+fence_min_y: -50.0
+fence_max_y: 50.0
 
 # for hardware test
 #fence_min_x: -2.8
@@ -96,7 +107,8 @@ fence_max_y: 14.0
 # for hardware test
 #capture_distance: 1.2
 # for simulation
-capture_distance: 2.1
+#capture_distance: 2.1
+capture_distance: 10.1
 
 # if true, use algorithm to compute attack plan
 # otherwise, joystick is expected to be used

@@ -348,6 +348,17 @@ public:
 	*/
 	MatrixXf& get_ENU_from_sector(int s);
 
+/**
+* Converts from sector number to ENU coordinates without considering origin shifts.
+* Origin is at lower left corner.
+* East (x), North (y), Up (z).
+* It uses sectors resolution defined by dcosl_x, drows_y.
+* @param s, sector number
+* @return poitner to Matrix of xyz in ENU.
+*/
+MatrixXf& get_ENU_from_sector_noShift(int s);
+
+
 	/**
 	* Converts an ENU coordinates to sector number.
 	* East (x), North (y), Up (z).

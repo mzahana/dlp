@@ -105,13 +105,13 @@ class Plotter():
 		# draw base and base refs
 		for ib in range(self.nBase):
 			s_b = self.Base[ib] # base sector
-			x,y,z = self.sector2enu(s_b)
-			self.traj_ax.scatter([x/self.sector_size[0]],[y/self.sector_size[1]], marker='o', s=500, facecolors='green', edgecolors = (0,0,0,1))
+			x,y,z = self.sector2normalized_enu(s_b)
+			self.traj_ax.scatter([x],[y], marker='o', s=500, facecolors='green', edgecolors = (0,0,0,1))
 
 		for ib in range(self.nBaseRef):
 			s_b = self.BaseRef[ib] # base sector
-			x,y,z = self.sector2enu(s_b)
-			self.traj_ax.scatter([x/self.sector_size[0]],[y/self.sector_size[1]], marker='o', s=500, facecolors='yellow', edgecolors = (0,0,0,1))
+			x,y,z = self.sector2normalized_enu(s_b)
+			self.traj_ax.scatter([x],[y], marker='o', s=500, facecolors='yellow', edgecolors = (0,0,0,1))
 
 		# initial draw
 		self.fig.canvas.draw()
@@ -151,8 +151,8 @@ class Plotter():
 
 
 			for d in range(self.Nd):
-				x = self.d_msg.defenders_position[d].x/self.sector_size[0]
-				y = self.d_msg.defenders_position[d].y/self.sector_size[1]
+				x = (self.d_msg.defenders_position[d].x + self.origin_shifts[0])/self.sector_size[0]
+				y = (self.d_msg.defenders_position[d].y+self.origin_shifts[1])/self.sector_size[1]
 				# write 'start'
 				if self.battle_flag_k <1 :
 					plt.text(x,y,'start')
@@ -160,8 +160,8 @@ class Plotter():
 				self.d_tr[d].set_ydata(np.append(self.d_tr[d].get_ydata(), np.array([y]) ) )
 
 			for e in range(self.Ne):
-				x = self.e_msg.enemy_position[e].x/self.sector_size[0]
-				y = self.e_msg.enemy_position[e].y/self.sector_size[1]
+				x = (self.e_msg.enemy_position[e].x+self.origin_shifts[0])/self.sector_size[0]
+				y = (self.e_msg.enemy_position[e].y+self.origin_shifts[1])/self.sector_size[1]
 				# write 'start'
 				if self.battle_flag_k <1 :
 					plt.text(x,y,'start')
@@ -200,6 +200,28 @@ class Plotter():
 		x = (c_x - 0.5)*dcols_x-shift_x # X coordinate
 		y = (nRows-r_y + 0.5)*drows_y-shift_y # Y coordinate
 		z = 0.0 #
+
+		return x,y,z
+
+	def sector2normalized_enu(self, s):
+		shift_x = self.origin_shifts[0]  # origin shifts
+		shift_y = self.origin_shifts[1]
+
+		# sector size
+		dcols_x = self.sector_size[0]
+		drows_y = self.sector_size[0]
+
+		nRows = self.grid_size[0]
+		nCols = self.grid_size[1]
+
+		# get sector locatoin
+		r_y,c_x = self.sector2rowcol(s)
+		x = (c_x - 0.5)*dcols_x-shift_x # X coordinate
+		y = (nRows-r_y + 0.5)*drows_y-shift_y # Y coordinate
+		z = 0.0 #
+
+		x = (x + shift_x)/dcols_x
+		y = (y + shift_y)/drows_y
 
 		return x,y,z
 

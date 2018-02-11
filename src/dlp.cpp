@@ -2167,6 +2167,32 @@ DLP::get_ENU_from_sector(int s){
 }
 
 /**
+* Converts from sector number to ENU coordinates without considering origin shifts.
+* Origin is at lower left corner.
+* East (x), North (y), Up (z).
+* It uses sectors resolution defined by dcosl_x, drows_y.
+* @param s, sector number
+* @return poitner to Matrix of xyz in ENU.
+*/
+MatrixXf&
+DLP::get_ENU_from_sector_noShift(int s){
+	float r_y, c_x; // row & column of sector in grid
+	enu_coord = MatrixXf::Constant(3,1,0.0);
+
+	// get sector locatoin
+	// stored in sector_location
+	DLP::get_sector_location(s);
+	r_y = sector_location(0,0);
+	c_x = sector_location(1,0);
+
+	enu_coord(0,0) = (c_x - 0.5)*dcols_x;// X coordinate
+	enu_coord(1,0) = (nRows-r_y + 0.5)*drows_y;// Y coordinate
+	enu_coord(2,0) = 0.0;// Z coordinate
+
+	return enu_coord;
+}
+
+/**
 * Converts an ENU coordinates to sector number.
 * East (x), North (y), Up (z).
 * It uses origin_shifts, and sectors resolution defined by dcosl_x, drows_y.

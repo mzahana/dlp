@@ -274,7 +274,7 @@ int main(int argc, char **argv)
 	nh.param("use_gps", use_gps, false);
 
 	bool use_sim;
-	nh.param("use_sim", use_gps, false);
+	nh.param("use_sim", use_sim, false);
 
 	float p_lat0;
 	nh.param<float>("lat0", p_lat0, 47.397742);
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 	Helpers hp;
 	CallBacks cb;
 
-	hp.lat0 = p_lat0; hp.lon0 = p_long0;
+	 hp.lat0 = p_lat0; hp.lon0 = p_long0;
 
 
 	/**
@@ -504,18 +504,28 @@ int main(int argc, char **argv)
 			enu(0,0)= hp.dx;
 			enu(1,0)= hp.dy;
 			enu(2,0)= cb.local_enu_msg.pose.position.z;
-			problem.set_origin_shifts(0.0, 0.0); /* TODO WHY???? */
+			//problem.set_origin_shifts(0.0, 0.0); /* TODO WHY???? */
+			if (problem.DEBUG)
+				cout << "[dlp_node] [loop] use_gps=True  " << "\n";
 		}
 		else{
 			enu(0,0)= cb.local_enu_msg.pose.position.x;
 			enu(1,0)= cb.local_enu_msg.pose.position.y;
 			enu(2,0)= cb.local_enu_msg.pose.position.z;
 			problem.set_origin_shifts(origin_shifts[0], origin_shifts[1]);
+			if (problem.DEBUG)
+				cout << "[dlp_node] [loop] use_gps=False  " << "\n";
 		}
-		if (use_sim)
+		if (use_sim){
 			problem.set_my_current_location(dloc(myID,0));
-		else
+			if (problem.DEBUG)
+				cout << "[dlp_node] [loop] use_sim=True  " << "\n";
+		}
+		else{
 			problem.set_my_current_location(problem.get_sector_from_ENU(enu));
+			if (problem.DEBUG)
+				cout << "[dlp_node] [loop] use_sim=False  " << "\n";
+		}
 		if (problem.DEBUG)
 			cout << "[dlp_node] [loop] my current location:  " << problem.get_my_current_location() << "\n";
 
@@ -564,7 +574,8 @@ int main(int argc, char **argv)
 		my_state.my_current_local_position.y = (float)cb.local_enu_msg.pose.position.y;
 		my_state.my_current_local_position.z = (float)cb.local_enu_msg.pose.position.z;
 
-		enu = problem.get_ENU_from_sector(problem.get_my_next_location());
+		// enu location of next target sector, considering shifts in the origin!!!
+		enu = problem.get_ENU_from_sector_noShift(problem.get_my_next_location());
 		
 		if (use_gps){// where each vehicle's local fixed frame can be different
 			// TODO

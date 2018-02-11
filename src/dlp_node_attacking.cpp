@@ -258,7 +258,7 @@ int main(int argc, char **argv)
 	nh.param("use_gps", use_gps, false);
 
 	bool use_sim;
-	nh.param("use_sim", use_gps, false);
+	nh.param("use_sim", use_sim, false);
 
 	float p_lat0;
 	nh.param<float>("lat0", p_lat0, 47.397742);
@@ -423,7 +423,7 @@ int main(int argc, char **argv)
 			eloc(i,0) =problem.get_sector_from_ENU(enu);// eloc because attackers take defenders side !
 		}
 		if (problem.DEBUG)
-			cout << "[dlp_node] [loop] e_loc:  " << eloc.transpose() << "\n";
+			cout << "[dlp_node_attacking] [loop] e_loc:  " << eloc.transpose() << "\n";
 
 		problem.set_e_current_locations(eloc);
 
@@ -436,7 +436,7 @@ int main(int argc, char **argv)
 			dloc(i,0) =problem.get_sector_from_ENU(enu);// dloc because attackers take defenders side !
 		}
 		if (problem.DEBUG)
-			cout << "[dlp_node] [loop] d_loc:  " << dloc.transpose() << "\n";
+			cout << "[dlp_node_attacking] [loop] d_loc:  " << dloc.transpose() << "\n";
 		problem.set_d_current_locations(dloc);
 		
 		// set my current location
@@ -467,20 +467,30 @@ int main(int argc, char **argv)
 			enu(0,0)= hp.dx;
 			enu(1,0)= hp.dy;
 			enu(2,0)= cb.local_enu_msg.pose.position.z;
-			problem.set_origin_shifts(0.0, 0.0);
+			//problem.set_origin_shifts(0.0, 0.0);
+			if (problem.DEBUG)
+				cout << "[dlp_node] [loop] use_gps=True  " << "\n";
 		}
 		else{
 			enu(0,0)= cb.local_enu_msg.pose.position.x;
 			enu(1,0)= cb.local_enu_msg.pose.position.y;
 			enu(2,0)= cb.local_enu_msg.pose.position.z;
 			problem.set_origin_shifts(origin_shifts[0], origin_shifts[1]);
+			if (problem.DEBUG)
+				cout << "[dlp_node] [loop] use_gps=False  " << "\n";
 		}
-		if (use_sim)
+		if (use_sim){
 			problem.set_my_current_location(dloc(myID,0));
-		else
+			if (problem.DEBUG)
+				cout << "[dlp_node] [loop] use_sim=True  " << "\n";
+		}
+		else{
 			problem.set_my_current_location(problem.get_sector_from_ENU(enu));
+			if (problem.DEBUG)
+				cout << "[dlp_node] [loop] use_sim=False  " << "\n";
+		}
 		if (problem.DEBUG)
-			cout << "[dlp_node] [loop] my current location:  " << problem.get_my_current_location() << "\n";
+			cout << "[dlp_node_attacking] [loop] my current location:  " << problem.get_my_current_location() << "\n";
 
 		// test conversion from sector to ENU and vise versa
 		//enu = problem.get_ENU_from_sector(dloc(myID,0));
@@ -508,7 +518,7 @@ int main(int argc, char **argv)
 		my_state.my_current_local_position.y = (float)cb.local_enu_msg.pose.position.y;
 		my_state.my_current_local_position.z = (float)cb.local_enu_msg.pose.position.z;
 
-		enu = problem.get_ENU_from_sector(problem.get_my_next_location());
+		enu = problem.get_ENU_from_sector_noShift(problem.get_my_next_location());
 		
 		if (use_gps){// where each vehicle's local fixed frame can be different
 			// TODO
@@ -574,12 +584,12 @@ int main(int argc, char **argv)
 
 		if (problem.DEBUG){
 			cout << "###################################################### \n" ;
-			cout << "[dlp_node] I am agent: " << problem.get_myID() << "\n";
-			cout << "[dlp_node] Problem solved in Total time= " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
-			cout << "[dlp_node] defenders current locations: " << eloc.transpose()<< endl;
-			cout << "[dlp_node] Attackers locations: " << dloc.transpose() << endl;
+			cout << "[dlp_node_attacking] I am agent: " << problem.get_myID() << "\n";
+			cout << "[dlp_node_attacking] Problem solved in Total time= " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
+			cout << "[dlp_node_attacking] defenders current locations: " << eloc.transpose()<< endl;
+			cout << "[dlp_node_attacking] Attackers locations: " << dloc.transpose() << endl;
 			problem.get_d_next_locations(next_loc);
-			cout << "[dlp_node] Attacker planned transitions: "<< dloc.transpose()
+			cout << "[dlp_node_attacking] Attacker planned transitions: "<< dloc.transpose()
 				<< " ---> "
 				<< next_loc.transpose()
 				<< "\n";
