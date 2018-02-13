@@ -10,16 +10,23 @@ grid_size: [10,10]
 # sector size (x,y) in ENU, in meter(s)
 # for hawrdware test
 #sector_size: [0.85, 0.85]
-# for simulation
+#### for simulation
+# for small world
 #sector_size: [2.0, 2.0]
-sector_size: [10.0, 10.0]
+# for big world
+#sector_size: [10.0, 10.0]
+# for medium world
+sector_size: [5.0, 5.0]
 
 # origin shifts (dx,dy) from (0,0) in ENU, in meter(s)
-# for hardware experiment
+##### for indoor hardware experiment at RISC lab
 #origin_shifts: [3.0, 3.0]
-# for simulation
-#origin_shifts: [0.0, 0.0]
-origin_shifts: [50.0, 50.0]
+
+##### for simulation
+# for small /medium world
+origin_shifts: [0.0, 0.0]
+# for big world
+#origin_shifts: [50.0, 50.0]
 
 N_defenders: 3
 N_attackers: 3
@@ -34,22 +41,48 @@ use_local_estimates: False
 nBase: 1
 
 # set of base sectors 
+### For Gazebo simulation
+# for small world
 #Base: [11]
-Base: [46]
+
+# for big world
+
+#Base: [46]
+# for medium world
+Base: [45]
 
 # count of base reference sectors
 #nBaseRef: 3
-nBaseRef: 12
+#### For simulation in Gazebo
+
+# for big world
+#nBaseRef: 12
+
+# for medium world
+nBaseRef: 6
 
 # set of base referense sectors
 #BaseRef: [2,8,9]
 #BaseRef: [3,4,5,10,12,17,18,19]
-BaseRef: [34,35,36,37,44,47,54,57,64,65,66,67]
+
+# for big world
+#BaseRef: [34,35,36,37,44,47,54,57,64,65,66,67]
+
+# for medium world
+BaseRef: [44, 46, 34, 35, 36, 55]
 
 # Sector (and # of sectors) locations of static obstacles
+
+#### For simulations in Gazebo
 # for the big world
-Nobs_sectors: 10
-obs_sectors: [45,46,55,56, 74, 53, 58,77, 33,28]
+#Nobs_sectors: 10
+#obs_sectors: [45,46,55,56, 74, 53, 58,77, 33,28]
+
+# for the big world
+Nobs_sectors: 5
+obs_sectors: [45, 75, 56, 54, 25]
+
+# for medium world
 #Nobs_sectors: 0
 #obs_sectors: []
 
@@ -89,21 +122,33 @@ use_gps: True
 # False for hardware test
 use_sim: True
 
-# lat/long of zero position
-#lat0: 47.397742
-#long0: 8.5455933
-lat0: 47.3972911
-long0: 8.5449276
+# lat/long of zero position in Gazebo
+# for small and medium worlds
+lat0: 47.397742
+long0: 8.5455933
+
+# for big world
+#lat0: 47.3972911
+#long0: 8.5449276
 
 # fence for simulation
+# for small world
 #fence_min_x: 0
 #fence_max_x: 14.0
 #fence_min_y: 0.0
 #fence_max_y: 14.0
-fence_min_x: -50.0
+
+# for medium world
+fence_min_x: 0.0
 fence_max_x: 50.0
-fence_min_y: -50.0
+fence_min_y: 0.0
 fence_max_y: 50.0
+
+# for big world
+#fence_min_x: -50.0
+#fence_max_x: 50.0
+#fence_min_y: -50.0
+#fence_max_y: 50.0
 
 # for hardware test
 #fence_min_x: -2.8
@@ -115,8 +160,14 @@ fence_max_y: 50.0
 # for hardware test
 #capture_distance: 1.2
 # for simulation
+# for small world
 #capture_distance: 2.1
-capture_distance: 10.1
+
+# for medium world
+capture_distance: 5.1
+
+# for big world
+#capture_distance: 10.1
 
 # if true, use algorithm to compute attack plan
 # otherwise, joystick is expected to be used
