@@ -309,10 +309,10 @@
       <pose frame=''>-3.41174 12.7392 0 0 -0 0</pose>
     </model>
     <state world_name='default'>
-      <sim_time>2356 924000000</sim_time>
-      <real_time>437 483102411</real_time>
-      <wall_time>1518523024 165571452</wall_time>
-      <iterations>434835</iterations>
+      <sim_time>2372 500000000</sim_time>
+      <real_time>15 651305802</real_time>
+      <wall_time>1518604469 195013371</wall_time>
+      <iterations>15576</iterations>
       <model name='border_wall'>
         <pose frame=''>0 25 0.5 0 -0 0</pose>
         <scale>1 1 1</scale>
@@ -364,80 +364,80 @@
         </link>
       </model>
       <model name='cylindar_obstacle_0_0_clone'>
-        <pose frame=''>17.5 22.5 0.5 0 -0 0</pose>
+        <pose frame=''>12.5 32.5 0.5 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>17.5 22.5 0.5 0 -0 0</pose>
+          <pose frame=''>12.5 32.5 0.5 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='cylindar_obstacle_0_0_clone_0'>
-        <pose frame=''>22.5 12.5 0.5 0 -0 0</pose>
+        <pose frame=''>32.5 27.5 0.5 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>22.5 12.5 0.5 0 -0 0</pose>
+          <pose frame=''>32.5 27.5 0.5 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='cylindar_obstacle_0_0_clone_clone'>
-        <pose frame=''>22.5 37.5 0.5 0 -0 0</pose>
+        <pose frame=''>17.5 37.5 0.5 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>22.5 37.5 0.5 0 -0 0</pose>
+          <pose frame=''>17.5 37.5 0.5 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='drc_practice_organge_jersey_barrier_clone_0'>
-        <pose frame=''>25 26.4323 0 0 -0 0</pose>
+        <pose frame=''>25.8548 32.0271 0 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>25 26.4323 0 0 -0 0</pose>
+          <pose frame=''>25.8548 32.0271 0 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='drc_practice_organge_jersey_barrier_clone_12'>
-        <pose frame=''>23.2644 29.0586 0 0 -0 1.30221</pose>
+        <pose frame=''>24.5796 34.344 0 0 -0 1.30221</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>23.2644 29.0586 0 0 -0 1.30221</pose>
+          <pose frame=''>24.5796 34.344 0 0 -0 1.30221</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='drc_practice_organge_jersey_barrier_clone_2'>
-        <pose frame=''>23.6889 24.804 0 0 0 -0.782964</pose>
+        <pose frame=''>24.0569 29.5484 0 0 0 -0.782964</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>23.6889 24.804 0 0 0 -0.782964</pose>
+          <pose frame=''>24.0569 29.5484 0 0 0 -0.782964</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='drc_practice_organge_jersey_barrier_clone_5'>
-        <pose frame=''>21.1971 25.1072 0 0 -0 0.92225</pose>
+        <pose frame=''>20.8559 30.198 0 0 -0 0.92225</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>21.1971 25.1072 0 0 -0 0.92225</pose>
+          <pose frame=''>20.8559 30.198 0 0 -0 0.92225</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='drc_practice_organge_jersey_barrier_clone_8'>
-        <pose frame=''>20.4173 27.733 0 0 0 -0.441584</pose>
+        <pose frame=''>20.2703 34.0086 0 0 0 -0.441584</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose frame=''>20.4173 27.733 0 0 0 -0.441584</pose>
+          <pose frame=''>20.2703 34.0086 0 0 0 -0.441584</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
@@ -454,10 +454,10 @@
         </link>
       </model>
       <model name='reactor'>
-        <pose frame=''>22.5 27.5 0 0 -0 0</pose>
+        <pose frame=''>22.5 32.5 0 0 -0 0</pose>
         <scale>0.143385 0.143385 0.143385</scale>
         <link name='link'>
-          <pose frame=''>22.5 27.5 0 0 -0 0</pose>
+          <pose frame=''>22.5 32.5 0 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>
@@ -469,7 +469,7 @@
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose frame=''>33.5691 -45.4163 67.4116 0 0.801799 1.4655</pose>
+        <pose frame=''>32.1133 -29.0317 71.4913 0 0.8618 1.4615</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>

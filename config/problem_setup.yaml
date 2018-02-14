@@ -7,6 +7,15 @@ myID: 0
 #grid_size: [7,7]
 grid_size: [10,10]
 
+# Grid four conrners
+# Whether to use grid corners along with grid_size (sector_size will be computed automatically) or not
+use_grid_corners: True
+# Po: origin, PE: east corner, PN: north corner, PNE: north-east corner, w.r.t Po
+grid_corner_Po: [47.397742, 8.5455933]
+grid_corner_PE: [47.3977418, 8.5462601]
+grid_corner_PN: [47.3981923, 8.5455924]
+grid_corner_PNE: [47.3981928, 8.5462601]
+
 # sector size (x,y) in ENU, in meter(s)
 # for hawrdware test
 #sector_size: [0.85, 0.85]
@@ -35,7 +44,7 @@ N_attackers: 3
 d_velocity: [3.0, 3.0, 3.0]
 
 # use local estimates of all defenders states
-use_local_estimates: False
+use_local_estimates: True
 
 # count of base sectors
 nBase: 1
@@ -49,7 +58,7 @@ nBase: 1
 
 #Base: [46]
 # for medium world
-Base: [45]
+Base: [35]
 
 # count of base reference sectors
 #nBaseRef: 3
@@ -59,7 +68,7 @@ Base: [45]
 #nBaseRef: 12
 
 # for medium world
-nBaseRef: 6
+nBaseRef: 7
 
 # set of base referense sectors
 #BaseRef: [2,8,9]
@@ -69,7 +78,7 @@ nBaseRef: 6
 #BaseRef: [34,35,36,37,44,47,54,57,64,65,66,67]
 
 # for medium world
-BaseRef: [44, 46, 34, 35, 36, 55]
+BaseRef: [25, 26, 34, 36, 44, 45, 46]
 
 # Sector (and # of sectors) locations of static obstacles
 
@@ -80,7 +89,7 @@ BaseRef: [44, 46, 34, 35, 36, 55]
 
 # for the big world
 Nobs_sectors: 5
-obs_sectors: [45, 75, 56, 54, 25]
+obs_sectors: [35, 33, 24, 47, 56]
 
 # for medium world
 #Nobs_sectors: 0
@@ -97,10 +106,10 @@ Tp: 4
 neighbor_radius: 1
 
 # defenders global/local sensing of enemies
-local_sensing: True
+local_sensing: False
 
 # local vs. global communication between defenders (centralized vs decomposed approach)
-global_comms: False
+global_comms: True
 
 # maximum ROS loop frequency
 update_freq: 50
@@ -164,7 +173,7 @@ fence_max_y: 50.0
 #capture_distance: 2.1
 
 # for medium world
-capture_distance: 5.1
+capture_distance: 7.1
 
 # for big world
 #capture_distance: 10.1

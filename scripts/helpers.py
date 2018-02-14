@@ -66,3 +66,59 @@ def local_deltaxy_LLA(lat_0, lon_0,  delta_x,  delta_y):
 	lat = lat_rad * 180.0 / pi
 	lon = lon_rad * 180.0 / pi
 	return(lat,lon)
+
+######################     ###########################3
+class Utils():
+	def __init__(self):
+		self.local_rot = 0.0 # [rad]
+
+		self.Po_lat = 0.0
+		self.Po_long = 0.0
+
+		self.PE_lat = 0.0
+		self.PE_long = 0.0
+
+		self.grid_side_length = 0.0 #[m]
+
+	def compute_local_rot(self):
+		dx,dy = LLA_local_deltaxy(self.Po_lat, self.Po_long, self.PE_lat, self.PE_long)
+		# get rotation
+		self.local_rot = atan2(dy,dx)
+
+	def global2local_ENU(self, lat, lon):
+		"""
+		* converts the GPS coordinates of target lat/lon w.r.t to lat0/lon0
+		* to global ENU.
+		* Then,to local ENU frame, it uses local_rot
+		* assumes local_rot is computed using compute_local_rot()
+		* assumes that target GPS is stored in lat,lon
+		"""
+		dx, dy = LLA_local_deltaxy(self.Po_lat, self.Po_long, lat, lon)
+		dx_L = cos(self.local_rot)*dx + sin(self.local_rot)*dy
+		dy_L = -1*sin(self.local_rot)*dx + cos(self.local_rot)*dy
+		
+		return (dx_L, dy_L)
+
+	def local2global_GPS(self, dx_L, dy_L):
+		"""
+		* converts local ENU coordinates dx_L, dy_L
+		* to global ENU.
+		* Then converts it to GPS w.r.t lat0/lon0
+		"""
+		dx = cos(self.local_rot)*dx_L - sin(self.local_rot)*dy_L
+		dy = sin(self.local_rot)*dx_L + cos(self.local_rot)*dy_L
+
+		# x/y swtiched as they are in ENU not NED (what the function expects)
+		lat,lon = local_deltaxy_LLA(self.Po_lat, self.Po_long, dy, dx)
+
+		return (lat,lon)
+
+	def compute_grid_side_length(self):
+		"""
+		* computes the length of the grid side. Assuming square grid
+		* it uses the East point PE_lat/PE_long, and the origin lat0/lon0 to compute that
+		"""
+		dx, dy = LLA_local_deltaxy(self.Po_lat, self.Po_long, self.PE_lat, self.PE_long)
+		self.grid_side_length = sqrt(dx*dx + dy*dy)
+
+		

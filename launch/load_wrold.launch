@@ -6,7 +6,7 @@
     <arg name="verbose" default="false"/>
     <arg name="paused" default="false"/>
 
-    <arg name="world" default="$(find dlp)/worlds/big_world_2.world"/>
+    <arg name="world" default="$(find dlp)/worlds/medium_world.world"/>
 
     <arg name="headless" default="false"/>
     <arg name="gui" default="true"/>

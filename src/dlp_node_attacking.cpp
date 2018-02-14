@@ -111,9 +111,64 @@ class Helpers{
 public:
 	float lat0, lon0, lat, lon;
 	float dx, dy;
+	// local coords
+	float dx_L, dy_L;
+
+	// lat/long of east corner w.r.t lat0,lon0
+	float PE_lat, PE_long;
+	// needed rotation to project on local grid, [rad]
+	float local_rot;
+	// grid side length
+	float grid_side_length;
 
 	 Helpers() { }
 	~Helpers() { }
+
+	void compute_local_rot(){
+		// get dx/dy in global ENU
+		LLA2ENU(lat0, lon0, PE_lat, PE_long);
+		// get rotation
+		local_rot = atan2(dy,dx);
+	}
+
+	/**
+	* computes the length of the grid side. Assuming square grid
+	* it uses the East point PE_lat/PE_long, and the origin lat0/lon0 to compute that
+	*/
+	void compute_grid_side_length(){
+		LLA2ENU(lat0, lon0, PE_lat, PE_long);
+		grid_side_length = sqrt(dx*dx + dy*dy);
+	}
+
+	/**
+	* converts the GPS coordinates of target lat/lon w.r.t to lat0/lon0
+	* to global ENU.
+	* Then,to local ENU frame, it uses local_rot
+	* assumes local_rot is computed using compute_local_rot()
+	* assumes that target GPS is stored in lat,lon
+	*/
+	void global2local_ENU(){
+		compute_local_rot();
+		LLA2ENU(lat0, lon0, lat, lon);
+		dx_L = cos(local_rot)*dx + sin(local_rot)*dy;
+		dy_L = -1*sin(local_rot)*dx + cos(local_rot)*dy;
+
+		dx = dx_L; dy = dy_L;
+	}
+
+	/**
+	* converts local ENU coordinates dx_L, dy_L
+	* to global ENU.
+	* Then converts it to GPS w.r.t lat0/lon0
+	*/
+	void local2global_GPS(){
+		compute_local_rot();
+		dx = cos(local_rot)*dx_L - sin(local_rot)*dy_L;
+		dy = sin(local_rot)*dx_L + cos(local_rot)*dy_L;
+
+		// x/y swtiched as they are in ENU not NED (what the function expects)
+		NED2LLA(lat0, lon0, dy, dx);
+	}
 
 	void LLA2ENU(float lat_0, float lon_0, float lat, float lon){
 
@@ -276,6 +331,18 @@ int main(int argc, char **argv)
 	nh.param<float>("long0", p_long0, 8.5455933);
 
 	/**
+	* get grid corners parameters
+	*/
+	bool use_grid_corners;
+	nh.param("use_grid_corners", use_grid_corners, false);
+	std::vector<float> Po, PE, PN, PNE, corner_default;
+	corner_default.push_back(10.0); corner_default.push_back(20.0);// default lattitude/longitude
+	nh.param< vector<float> >("grid_corner_Po", Po, corner_default);
+	nh.param< vector<float> >("grid_corner_PE", PE, corner_default);
+	nh.param< vector<float> >("grid_corner_PN", PN, corner_default);
+	nh.param< vector<float> >("grid_corner_PNE", PNE, corner_default);
+
+	/**
 	* The advertise() function is how you tell ROS that you want to
 	* publish on a given topic name.
 	*
@@ -294,6 +361,31 @@ int main(int argc, char **argv)
 	CallBacks cb;
 
 	hp.lat0 = p_lat0; hp.lon0 = p_long0;
+
+/**
+	* For outdoor use, we assume square grid.
+	* We assume the origin and East GPS points are provided
+	* a square grid is created based on this.
+	* The number of sectors in each dimension is the same
+	* grid_size paramter should contain the same number for rows and columns
+	* only the first element is used (number of rows)
+	*/
+
+	if (use_gps && use_grid_corners){
+		hp.lat0 = Po[0]; hp.lon0 = Po[1];
+		//East corner
+		hp.PE_lat = PE[0]; hp.PE_long = PE[1];
+
+		// compute required rotation to project on local grid defined by origin and an East point
+		hp.compute_local_rot();
+		// assume square grid, use origin point and east pont
+		hp.compute_grid_side_length();
+		// update sector size. It's the same for rows and columns in outdoor test
+		grid_size[1] = grid_size[0];
+		sector_size[0] = hp.grid_side_length / grid_size[0];
+		sector_size[1] = sector_size[0];
+		origin_shifts[0] = 0.0; origin_shifts[1] = 0.0;
+	}
 
 
 	/**
@@ -457,10 +549,21 @@ int main(int argc, char **argv)
 		
 		// set my current location
 		if (use_gps){
+			if(use_grid_corners){
+				// update sector size. It's the same for rows and columns in outdoor test
+				grid_size[1] = grid_size[0];
+				hp.compute_grid_side_length();
+				sector_size[0] = hp.grid_side_length / grid_size[0];
+				sector_size[1] = sector_size[0];
+			}
 			// TODO
 			// convert my gps coords to ENU; ignore height (not used)
 			// result stored in hp.dx, hp.dy
-			hp.LLA2ENU(hp.lat0, hp.lon0, cb.current_lat, cb.current_long);
+			if (use_grid_corners)
+				hp.global2local_ENU();
+			else
+				hp.LLA2ENU(hp.lat0, hp.lon0, cb.current_lat, cb.current_long);
+
 			// bound the result
 			if (hp.dx > (grid_size[0]*sector_size[0]) ){
 				ROS_WARN("current x= %f is out of grid bounds. Theresholded.", hp.dx);
@@ -550,10 +653,17 @@ int main(int argc, char **argv)
 			my_state.my_next_position.z = altitude_setpoint;
 
 			// get next mavros local_position
-				// from enu in grid position to absolute LLA
-			hp.NED2LLA(hp.lat0, hp.lon0, enu(1,0), enu(0,0));
+			// from enu in grid position to absolute LLA
+			if (use_grid_corners){
+				hp.dx_L = enu(0,0); hp.dy_L = enu(1,0);
+				hp.local2global_GPS();
+			}
+			else
+				hp.NED2LLA(hp.lat0, hp.lon0, enu(1,0), enu(0,0));
+
 			// from abolute LLA to mavros local_position
 			hp.LLA2ENU(cb.current_lat, cb.current_long, hp.lat, hp.lon);
+
 			enu(0,0) = hp.dx;
 			enu(1,0) = hp.dy;
 			my_state.my_next_local_position.x = my_state.my_current_local_position.x + enu(0,0);
