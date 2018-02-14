@@ -8,7 +8,7 @@
 
     <arg name="est" default="ekf2"/>
     <arg name="vehicle" default="iris"/>
-    <arg name="world" default="$(find dlp)/worlds/medium_world.world"/>
+    <arg name="world" default="$(find dlp)/worlds/medium_world_more_obstacles.world"/>
 
     <arg name="headless" default="false"/>
     <arg name="gui" default="true"/>
@@ -105,7 +105,7 @@
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
             <arg name="x" value="17.5"/>
-            <arg name="y" value="27.5"/>
+            <arg name="y" value="22.5"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>
             <arg name="P" value="0"/>
@@ -137,7 +137,7 @@
         <arg name="ID" value="4"/>
 
         <include file="$(find px4)/launch/single_vehcile_spawn.launch">
-            <arg name="x" value="32.5"/>
+            <arg name="x" value="37.5"/>
             <arg name="y" value="32.5"/>
             <arg name="z" value="0"/>
             <arg name="R" value="0"/>

@@ -13,6 +13,7 @@ use_grid_corners: True
 # Po: origin, PE: east corner, PN: north corner, PNE: north-east corner, w.r.t Po
 grid_corner_Po: [47.397742, 8.5455933]
 grid_corner_PE: [47.3977418, 8.5462601]
+#grid_corner_PE: [47.3981254, 8.5457602]
 grid_corner_PN: [47.3981923, 8.5455924]
 grid_corner_PNE: [47.3981928, 8.5462601]
 
@@ -40,12 +41,6 @@ origin_shifts: [0.0, 0.0]
 N_defenders: 3
 N_attackers: 3
 
-# defenders velocity [m/s]
-d_velocity: [3.0, 3.0, 3.0]
-
-# use local estimates of all defenders states
-use_local_estimates: True
-
 # count of base sectors
 nBase: 1
 
@@ -68,7 +63,11 @@ Base: [35]
 #nBaseRef: 12
 
 # for medium world
-nBaseRef: 7
+#nBaseRef: 7
+# more obstacles
+nBaseRef: 4
+# with no obstacles
+#nBaseRef: 8
 
 # set of base referense sectors
 #BaseRef: [2,8,9]
@@ -78,7 +77,11 @@ nBaseRef: 7
 #BaseRef: [34,35,36,37,44,47,54,57,64,65,66,67]
 
 # for medium world
-BaseRef: [25, 26, 34, 36, 44, 45, 46]
+#BaseRef: [25, 26, 34, 36, 44, 45, 46]
+# more obstacles
+BaseRef: [25, 34, 36, 45]
+# with no obstacles
+#BaseRef: [24, 25, 26, 34, 36, 44, 45, 46]
 
 # Sector (and # of sectors) locations of static obstacles
 
@@ -87,13 +90,15 @@ BaseRef: [25, 26, 34, 36, 44, 45, 46]
 #Nobs_sectors: 10
 #obs_sectors: [45,46,55,56, 74, 53, 58,77, 33,28]
 
-# for the big world
-Nobs_sectors: 5
-obs_sectors: [35, 33, 24, 47, 56]
-
-# for medium world
-#Nobs_sectors: 0
-#obs_sectors: []
+# for the medium world
+#Nobs_sectors: 5
+#obs_sectors: [35, 33, 24, 47, 56]
+# more obstacles
+Nobs_sectors: 8
+obs_sectors: [35, 33, 24, 26, 47, 56, 44, 46]
+# with no obstacles, except the base
+#Nobs_sectors: 1
+#obs_sectors: [35]
 
 
 # strategy weights
@@ -106,10 +111,16 @@ Tp: 4
 neighbor_radius: 1
 
 # defenders global/local sensing of enemies
-local_sensing: False
+local_sensing: True
 
 # local vs. global communication between defenders (centralized vs decomposed approach)
-global_comms: True
+global_comms: False
+
+# defenders velocity [m/s]
+d_velocity: [4.0, 4.0, 4.0]
+
+# use local estimates of all defenders states
+use_local_estimates: True
 
 # maximum ROS loop frequency
 update_freq: 50

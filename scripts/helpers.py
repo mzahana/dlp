@@ -113,6 +113,20 @@ class Utils():
 
 		return (lat,lon)
 
+	def localENU2GlobalENU(self, dx_L, dy_L):
+		dx = cos(self.local_rot)*dx_L - sin(self.local_rot)*dy_L
+		dy = sin(self.local_rot)*dx_L + cos(self.local_rot)*dy_L
+
+		return (dx, dy)
+
+	def globalENU2LocalENU(self, dx,dy):
+		dx_L = cos(self.local_rot)*dx + sin(self.local_rot)*dy
+		dy_L = -1*sin(self.local_rot)*dx + cos(self.local_rot)*dy
+
+		return (dx_L, dy_L)
+		
+		
+
 	def compute_grid_side_length(self):
 		"""
 		* computes the length of the grid side. Assuming square grid

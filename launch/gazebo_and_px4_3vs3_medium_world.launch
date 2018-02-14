@@ -7,7 +7,7 @@
 
 	<!-- Launch simulated master node-->
 	<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
-	<node pkg="dlp" type="sim_supervisory_node.py" name="sim_supervisory_node"  required="true" output="screen">
+	<node pkg="dlp" type="supervisory_node_gps.py" name="sim_supervisory_node"  required="true" output="screen">
 	</node>
 
 	<!--node pkg="rosbag" type="record" name="bag_recording" args="-o /home/abdkadma/ros_bags/zahana_game/simulated_game.bag $(arg topics)" required="true" if="$(arg record_bag)">

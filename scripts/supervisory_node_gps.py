@@ -32,10 +32,12 @@ class MasterC():
 		self.Nd = rospy.get_param('N_defenders', 3)
 		self.Ne = rospy.get_param('N_attackers', 2)
 
+		self.use_grid_corners = rospy.get_param('use_grid_corners', False)
 		# grid size
 		self.grid_size =  rospy.get_param('grid_size', [10,10])
 		# enforce square grid
-		self.grid_size[1] = self.grid_size[0]
+		if (self.use_grid_corners):
+			self.grid_size[1] = self.grid_size[0]
 
 		# GPS coords of grid zero position
 		self.lat0 = rospy.get_param('lat0', 47.397742)
@@ -53,8 +55,10 @@ class MasterC():
 		self.uti.compute_grid_side_length()
 
 		# compute sector size
-		self.sector_size = [1,1]
-		self.sector_size[0] = self.uti.grid_side_length / self.grid_size[0]
+		if (self.use_grid_corners):
+			self.sector_size = [1,1]
+			self.sector_size[0] = self.uti.grid_side_length / self.grid_size[0]
+			self.sector_size[1] = self.sector_size[0]
 
 		# Whether to use Gazebo or not
 		self.use_sim = rospy.get_param('use_sim', False)
@@ -106,127 +110,6 @@ class MasterC():
 		# loop rate
 		self.rate = rospy.Rate(50)
 
-	def d1PosUpdate(self):
-		model_name = 'iris_1'
-		g_i = -1
-		i=0 # agent id in game team
-		for c in range(len(self.gz_msg.name)):
-			if self.gz_msg.name[c] == model_name:
-				# index of model in gazebo msg
-				g_i = c
-				break
-
-		# sanity check: make sure no negative index
-		if g_i > -1:
-			x = self.gz_msg.pose[g_i].position.x
-			y = self.gz_msg.pose[g_i].position.y
-			p=Point32(x, y, 0.0)
-			self.d_msg.defenders_position[i] = p
-			# get sector
-			self.d_msg.defenders_sectors[i] = self.enu2sector(x, y, 0.0)
-
-	def d2PosUpdate(self):
-		model_name = 'iris_3'
-		g_i = -1
-		i=1 # agent id in game team
-		for c in range(len(self.gz_msg.name)):
-			if self.gz_msg.name[c] == model_name:
-				# index of model in gazebo msg
-				g_i = c
-				break
-
-		# sanity check: make sure no negative index
-		if g_i > -1:
-			x = self.gz_msg.pose[g_i].position.x
-			y = self.gz_msg.pose[g_i].position.y
-			p=Point32(x, y, 0.0)
-			self.d_msg.defenders_position[i] = p
-			# get sector
-			self.d_msg.defenders_sectors[i] = self.enu2sector(x, y, 0.0)
-
-	def d3PosUpdate(self):
-		model_name = 'iris_4'
-		g_i = -1
-		i=2 # agent id in game team
-		for c in range(len(self.gz_msg.name)):
-			if self.gz_msg.name[c] == model_name:
-				# index of model in gazebo msg
-				g_i = c
-				break
-
-		# sanity check: make sure no negative index
-		if g_i > -1:
-			x = self.gz_msg.pose[g_i].position.x
-			y = self.gz_msg.pose[g_i].position.y
-			p=Point32(x, y, 0.0)
-			self.d_msg.defenders_position[i] = p
-			# get sector
-			self.d_msg.defenders_sectors[i] = self.enu2sector(x, y, 0.0)
-
-	def e1PosUpdate(self):
-		model_name = 'iris_2'
-		g_i = -1
-		i=0 # agent id in game team
-		for c in range(len(self.gz_msg.name)):
-			if self.gz_msg.name[c] == model_name:
-				# index of model in gazebo msg
-				g_i = c
-				break
-
-		# sanity check: make sure no negative index
-		if g_i > -1:
-			x = self.gz_msg.pose[g_i].position.x
-			y = self.gz_msg.pose[g_i].position.y
-			p=Point32(x, y, 0.0)
-			self.e_msg.enemy_position[i] = p
-			# get sector
-			self.e_msg.enemy_sectors[i] = self.enu2sector(x, y, 0.0)
-
-	def e2PosUpdate(self):
-		model_name = 'iris_5'
-		g_i = -1
-		i=1 # agent id in game team
-		for c in range(len(self.gz_msg.name)):
-			if self.gz_msg.name[c] == model_name:
-				# index of model in gazebo msg
-				g_i = c
-				break
-
-		# sanity check: make sure no negative index
-		if g_i > -1:
-			x = self.gz_msg.pose[g_i].position.x
-			y = self.gz_msg.pose[g_i].position.y
-			p=Point32(x, y, 0.0)
-			self.e_msg.enemy_position[i] = p
-			# get sector
-			self.e_msg.enemy_sectors[i] = self.enu2sector(x, y, 0.0)
-
-	def e3PosUpdate(self):
-		model_name = 'iris_6'
-		g_i = -1
-		i=2 # agent id in game team
-		for c in range(len(self.gz_msg.name)):
-			if self.gz_msg.name[c] == model_name:
-				# index of model in gazebo msg
-				g_i = c
-				break
-
-		# sanity check: make sure no negative index
-		if g_i > -1:
-			x = self.gz_msg.pose[g_i].position.x
-			y = self.gz_msg.pose[g_i].position.y
-			p=Point32(x, y, 0.0)
-			self.e_msg.enemy_position[i] = p
-			# get sector
-			self.e_msg.enemy_sectors[i] = self.enu2sector(x, y, 0.0)
-
-	def updateAgentsPos(self):
-		self.d1PosUpdate()
-		self.d2PosUpdate()
-		self.d3PosUpdate()
-		self.e1PosUpdate()
-		self.e2PosUpdate()
-		self.e3PosUpdate()
 
 	# gets agent's gps position, converts it to grid position in ENU
 	def d1poseCb(self, msg):

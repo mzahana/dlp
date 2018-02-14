@@ -73,6 +73,16 @@ class fcuModes:
 class Utils():
 	def __init__(self):
 
+		# create object for utility functions
+		self.uti = hp.Utils()
+
+		self.use_grid_corners = rospy.get_param('use_grid_corners', False)
+		# grid size
+		self.grid_size =  rospy.get_param('grid_size', [10,10])
+		# enforce square grid
+		if (self.use_grid_corners):
+			self.grid_size[1] = self.grid_size[0]
+
 		# msgs
 		self.d_msg = DefendersState()
 		self.e_msg = EnemyState()
@@ -97,6 +107,24 @@ class Utils():
 		self.lat0 = rospy.get_param('lat0', 47.397742)
 		self.lon0 = rospy.get_param('long0', 8.5455933)
 
+		# GPS coordinates for East poitn w.r.t zero GPS point lat0/lon0
+		self.PE = rospy.get_param('grid_corner_PE', [1.0, 2.0])
+		self.uti.Po_lat = self.lat0
+		self.uti.Po_long = self.lon0
+		self.uti.PE_lat = self.PE[0]
+		self.uti.PE_long = self.PE[1]
+
+		# compute local rotation
+		self.uti.compute_local_rot()
+		# compute grid side lenght, assuming square grid
+		self.uti.compute_grid_side_length()
+
+		# compute sector size
+		if (self.use_grid_corners):
+			self.sector_size = [1,1]
+			self.sector_size[0] = self.uti.grid_side_length / self.grid_size[0]
+			self.sector_size[1] = self.sector_size[0]
+
 		# is gps used
 		self.use_gps = rospy.get_param('use_gps', False)
 
@@ -105,6 +133,11 @@ class Utils():
 		self.fence_x_max = rospy.get_param('fence_max_x', 5.0)
 		self.fence_y_min = rospy.get_param('fence_min_y', 0.0)
 		self.fence_y_max = rospy.get_param('fence_max_y', 5.0)
+		if (self.use_grid_corners):
+			self.fence_x_min = 0.0
+			self.fence_x_max = self.uti.grid_side_length
+			self.fence_y_min = 0.0
+			self.fence_y_max = self.uti.grid_side_length
 
 		# flags
 		self.home_flag = False
@@ -212,9 +245,11 @@ class Utils():
 	# should input the 'change' in setpoint 
 	def boundSp(self, dx, dy):
 		if self.use_gps:
-			lat, lon = hp.local_deltaxy_LLA(self.my_lat, self.my_lon,  dy,  dx) # x/y siwtch for NED
+			dx_g, dy_g = self.uti.localENU2GlobalENU(dx, dy)
+			lat, lon = hp.local_deltaxy_LLA(self.my_lat, self.my_lon,  dy_g,  dx_g) # x/y siwtch for NED
 			# get position in grid
-			x,y = hp.LLA_local_deltaxy(self.lat0, self.lon0,  lat,  lon)
+			x,y = self.uti.global2local_ENU(lat, lon)
+			#x,y = hp.LLA_local_deltaxy(self.lat0, self.lon0,  lat,  lon)
 			if x < self.fence_x_min:
 				x = self.fence_x_min
 			if x > self.fence_x_max:
@@ -225,7 +260,8 @@ class Utils():
 				y = self.fence_y_max
 
 			# convert to mavros local_poistion
-			lat, lon = hp.local_deltaxy_LLA(self.lat0, self.lon0,  y,  x) # x/y siwtch for NED
+			lat, lon = self.uti.local2global_GPS(x, y)
+			#lat, lon = hp.local_deltaxy_LLA(self.lat0, self.lon0,  y,  x) # x/y siwtch for NED
 			x,y = hp.LLA_local_deltaxy(self.my_lat, self.my_lon,  lat,  lon)
 			# x,y here are the change in setpoint, not the setpoint directly
 
