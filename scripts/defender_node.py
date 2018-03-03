@@ -71,6 +71,9 @@ class fcuModes:
 class Utils():
 	def __init__(self):
 
+		# whether to set offboard mode in code or through transmitter
+		self.set_offb_b = rospy.get_param('set_offboard_in_code', True)
+
 		# msgs
 		self.d_msg = DefendersState()
 		self.e_msg = EnemyState()
@@ -96,7 +99,7 @@ class Utils():
 		# Instantiate a setpoint topic structure
 		self.setp		= PositionTarget()
 		# use position setpoints
-		self.setp.type_mask	= int('010111111000', 2)
+		self.setp.type_mask	= int('101111111000', 2)
 
 		# get altitude setpoint from parameters
 		self.altSp = rospy.get_param('altitude_setpoint')
@@ -189,8 +192,11 @@ def main():
 					cb.setp.position.x = cb.dlp_msg.my_current_local_position.x
 					cb.setp.position.y = cb.dlp_msg.my_current_local_position.y
 				cb.setp.position.z = cb.altSp
-				mode.setArm()
-				mode.setOffboardMode()
+
+				if cb.set_offb_b:
+					mode.setArm()
+					mode.setOffboardMode()
+
 				cb.takeoff_flag = False
 		elif cb.land_flag:
 			cb.battle_flag = False

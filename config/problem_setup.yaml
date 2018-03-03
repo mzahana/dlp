@@ -11,7 +11,7 @@ grid_size: [10,10]
 # Whether to use grid corners along with grid_size (sector_size will be computed automatically) or not
 use_grid_corners: True
 # Po: origin, PE: east corner, PN: north corner, PNE: north-east corner, w.r.t Po
-grid_corner_Po: [47.397742, 8.5455933]
+grid_corner_Po: [47.397742, 8.545594]
 grid_corner_PE: [47.3977418, 8.5462601]
 #grid_corner_PE: [47.3981254, 8.5457602]
 grid_corner_PN: [47.3981923, 8.5455924]
@@ -39,7 +39,7 @@ origin_shifts: [0.0, 0.0]
 #origin_shifts: [50.0, 50.0]
 
 N_defenders: 3
-N_attackers: 3
+N_attackers: 1
 
 # count of base sectors
 nBase: 1
@@ -132,7 +132,9 @@ home: [1.0, 1.0]
 altitude_setpoint: 3.0
 
 # use joystick
-enable_joystick: False
+enable_joystick: True
+# joystick scale: affect rate os position change
+joystick_factor: 4.0
 
 # whether to use GPS or directly local_position coordinates
 # False for indoor hardware test
@@ -145,7 +147,7 @@ use_sim: True
 # lat/long of zero position in Gazebo
 # for small and medium worlds
 lat0: 47.397742
-long0: 8.5455933
+long0: 8.545594
 
 # for big world
 #lat0: 47.3972911
@@ -191,4 +193,7 @@ capture_distance: 7.1
 
 # if true, use algorithm to compute attack plan
 # otherwise, joystick is expected to be used
-auto_attack: true
+auto_attack: False
+
+# setting offboard in code or through transmitter
+set_offboard_in_code: True

@@ -3,11 +3,11 @@
 	<arg name="topics" default="/defenders_locations /enemy_locations /takeoff /defender1/dlp_state /defender2/dlp_state /defender3/dlp_state /battle /commander /defender1/mavros/extended_state /defender2/mavros/extended_state /defender3/mavros/extended_state /attacker1/mavros/extended_state /defender1/mavros/local_position/velocity /defender2/mavros/local_position/velocity /defender3/mavros/local_position/velocity /attacker1/mavros/local_position/velocity /defender1/mavros/state /defender2/mavros/state /defender3/mavros/state /attacker1/mavros/state"/>
 
 	<!-- Launch gazebo and autopilots-->
-	<include file="$(find px4)/launch/multi_uav_mavros_sitl_3vs1.launch"/>
+	<include file="$(find dlp)/launch/multi_uav_mavros_sitl_3vs1_medium_world.launch"/>
 
 	<!-- Launch simulated master node-->
 	<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
-	<node pkg="dlp" type="sim_supervisory_node.py" name="sim_supervisory_node"  required="true" output="screen">
+	<node pkg="dlp" type="supervisory_node_gps_3vs1.py" name="sim_supervisory_node"  required="true" output="screen">
 	</node>
 
 	<!--node pkg="rosbag" type="record" name="bag_recording" args="-o /home/abdkadma/ros_bags/zahana_game/simulated_game.bag $(arg topics)" required="true" if="$(arg record_bag)">

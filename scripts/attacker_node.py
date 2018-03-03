@@ -76,6 +76,9 @@ class Utils():
 		# create object for utility functions
 		self.uti = hp.Utils()
 
+		# whether to set offboard mode in code or through transmitter
+		self.set_offb_b = rospy.get_param('set_offboard_in_code', True)
+
 		self.use_grid_corners = rospy.get_param('use_grid_corners', False)
 		# grid size
 		self.grid_size =  rospy.get_param('grid_size', [10,10])
@@ -93,7 +96,7 @@ class Utils():
 		self.joy_msg.axes=[0.0, 0.0, 0.0]
 
 		# step size multiplies joystick input
-		self.joy_FACTOR = 2.0
+		self.joy_FACTOR = rospy.get_param('joystick_factor', 2.0)
 		
 		# my GPS coords
 		self.my_lat = 0.0
@@ -113,6 +116,9 @@ class Utils():
 		self.uti.Po_long = self.lon0
 		self.uti.PE_lat = self.PE[0]
 		self.uti.PE_long = self.PE[1]
+
+		# safety margin from fence boundaries; to account for GPS errors
+		self.safety_margin = 0.1
 
 		# compute local rotation
 		self.uti.compute_local_rot()
@@ -134,10 +140,10 @@ class Utils():
 		self.fence_y_min = rospy.get_param('fence_min_y', 0.0)
 		self.fence_y_max = rospy.get_param('fence_max_y', 5.0)
 		if (self.use_grid_corners):
-			self.fence_x_min = 0.0
-			self.fence_x_max = self.uti.grid_side_length
+			self.fence_x_min = 0.0 + self.safety_margin*self.uti.grid_side_length
+			self.fence_x_max = self.uti.grid_side_length - self.safety_margin*self.uti.grid_side_length
 			self.fence_y_min = 0.0
-			self.fence_y_max = self.uti.grid_side_length
+			self.fence_y_max = self.uti.grid_side_length - self.safety_margin*self.uti.grid_side_length
 
 		# flags
 		self.home_flag = False
@@ -159,7 +165,7 @@ class Utils():
 		# Instantiate a setpoint topic structure
 		self.setp		= PositionTarget()
 		# use position setpoints
-		self.setp.type_mask	= int('010111111000', 2)
+		self.setp.type_mask	= int('101111111000', 2)
 
 		# get altitude setpoint from parameters
 		self.altSp = rospy.get_param('altitude_setpoint')
@@ -251,11 +257,11 @@ class Utils():
 			x,y = self.uti.global2local_ENU(lat, lon)
 			#x,y = hp.LLA_local_deltaxy(self.lat0, self.lon0,  lat,  lon)
 			if x < self.fence_x_min:
-				x = self.fence_x_min
+				x = self.fence_x_min + self.safety_margin*self.uti.grid_side_length
 			if x > self.fence_x_max:
 				x = self.fence_x_max
 			if y < self.fence_y_min:
-				y = self.fence_y_min
+				y = self.fence_y_min + self.safety_margin*self.uti.grid_side_length
 			if y > self.fence_y_max:
 				y = self.fence_y_max
 
@@ -292,7 +298,7 @@ def main():
 	rospy.init_node('attacker_node', anonymous=True)
 
 	# subscribers
-	rospy.Subscriber('mavros/global_position/global', NavSatFix, cb.gpsCb)
+	rospy.Subscriber('mavros/global_position/raw/fix', NavSatFix, cb.gpsCb)
 	rospy.Subscriber('mavros/local_position/pose', PoseStamped, cb.localCb)
 	rospy.Subscriber('/defenders_locations', DefendersState, cb.dCb)
 	rospy.Subscriber('/enemy_locations', EnemyState, cb.eCb)
@@ -336,8 +342,11 @@ def main():
 					cb.setp.position.x = cb.local_pose.x
 					cb.setp.position.y = cb.local_pose.y
 				cb.setp.position.z = cb.altSp
-				mode.setArm()
-				mode.setOffboardMode()
+
+				if cb.set_offb_b:
+					mode.setArm()
+					mode.setOffboardMode()
+
 				cb.takeoff_flag = False
 		elif cb.land_flag:
 			cb.battle_flag = False
@@ -346,7 +355,7 @@ def main():
 			cb.land_flag = False
 		
 		elif cb.battle_flag:
-			if rospy.get_param('enable_joy', False):
+			if rospy.get_param('enable_joystick', False):
 				cb.joy2setpoint()
 			elif auto_attack:
 				# TODO get setpoint from LP algorithm
@@ -355,7 +364,7 @@ def main():
 				cb.setp.position.z = cb.altSp
 
 
-		if rospy.get_param('enable_joy', False):
+		if rospy.get_param('enable_joystick', False):
 			cb.joy2setpoint()
 
 		# check if all attackers are captured, then land and exit node
