@@ -71,11 +71,11 @@ class MasterC():
 
 		self.d_gps_topic_names = []
 		for i in range(self.Nd):
-			self.d_gps_topic_names.append('/defender'+str(i+1)+'/mavros/global_position/raw/fix')
+			self.d_gps_topic_names.append('/defender_'+str(i+1)+'/mavros/global_position/raw/fix')
 
 		self.e_gps_topic_names = []
 		for i in range(self.Ne):
-			self.e_gps_topic_names.append('/attacker'+str(i+1)+'/mavros/global_position/raw/fix')
+			self.e_gps_topic_names.append('/attacker_'+str(i+1)+'/mavros/global_position/raw/fix')
 
 		# msgs
 		self.d_msg = DefendersState()
