@@ -1,6 +1,6 @@
 <launch>
 	<arg name="id" default="0"/>
-	<arg name="ns" default="defender_$(eval 1 + arg('id'))"/>
+	<arg name="ns" default="$(eval 'defender_' + str(1 + arg('id')) )"/>
 
 	<arg name="fcu_url" default="/dev/ttyUSB0:921600" />
 	<arg name="gcs_url" default="" />

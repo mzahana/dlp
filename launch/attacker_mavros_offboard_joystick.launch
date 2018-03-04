@@ -1,7 +1,7 @@
 <launch>
 	<arg name="id" default="0"/>
 	<arg name="joy" default="False"/>
-	<arg name="ns" default="attacker_$(evsl 1+ arg('id'))"/>
+	<arg name="ns" default="$(eval 'attacker_' + str(1 + arg('id')) )"/>
 
 	<arg name="fcu_url" default="/dev/ttyUSB0:921600" />
 	<arg name="gcs_url" default="" />
