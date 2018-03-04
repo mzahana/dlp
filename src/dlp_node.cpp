@@ -596,8 +596,11 @@ int main(int argc, char **argv)
 			// TODO
 			// convert my gps coords to ENU; ignore height (not used)
 			// result stored in hp.dx, hp.dy
-			if (use_grid_corners)
+			if (use_grid_corners){
+				hp.lat = cb.current_lat;
+				hp.lon = cb.current_long;
 				hp.global2local_ENU();
+			}
 			else
 				hp.LLA2ENU(hp.lat0, hp.lon0, cb.current_lat, cb.current_long);
 
