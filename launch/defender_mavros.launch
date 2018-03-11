@@ -17,7 +17,7 @@
 	</include>
 
 	<group ns="$(arg ns)">
-		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+		<rosparam command="load" file="$(find dlp)/config/problem_setup_outdoor.yaml" />
 		<param name="myID" type="int" value="$(arg id)" />
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">

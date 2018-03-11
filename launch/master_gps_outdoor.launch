@@ -1,0 +1,7 @@
+<launch>
+
+	<rosparam command="load" file="$(find dlp)/config/problem_setup_outdoor.yaml" />
+	<node pkg="dlp" type="supervisory_node_gps.py" name="supervisory_node"  required="true" output="screen">
+	</node>
+
+</launch>

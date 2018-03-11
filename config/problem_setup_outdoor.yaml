@@ -1,0 +1,112 @@
+# Setup problem/game parameters before running the dlp_node
+debug: False
+# unique agent ID, starts from 0
+myID: 0
+
+# [rows, columns]
+grid_size: [8,8]
+
+# Grid four conrners
+# Whether to use grid corners along with grid_size (sector_size will be computed automatically) or not
+use_grid_corners: True
+# Po: origin, PE: east corner, PN: north corner, PNE: north-east corner, w.r.t Po
+# Each point is [latitude, longitude]
+grid_corner_Po: [22.3176265, 39.0977047]
+grid_corner_PE: [22.3172996,  39.0977929]
+#grid_corner_PN: [47.3981923, 8.5455924]
+#grid_corner_PNE: [47.3981928, 8.5462601]
+
+# sector size (x,y) in ENU, in meter(s)
+# computed automatically if use_grid_corners is True
+sector_size: [5.0, 5.0]
+
+# origin shifts (dx,dy) from (0,0) in ENU, in meter(s)
+# ignored (assumed zeros) if use_grid_corners is True
+origin_shifts: [0.0, 0.0]
+
+N_defenders: 1
+N_attackers: 1
+
+# count of base sectors
+nBase: 1
+
+# set of base sectors 
+Base: [20]
+
+# count of base reference sectors
+nBaseRef: 8
+
+# set of base referense sectors
+BaseRef: [11,12,13,19, 21, 27,28,29]
+
+# with no obstacles
+#BaseRef: [24, 25, 26, 34, 36, 44, 45, 46]
+
+# Sector (and # of sectors) locations of static obstacles
+Nobs_sectors: 0
+obs_sectors: []
+
+# strategy weights
+alpha: -0.99
+beta: -0.01
+
+# prediction horizon
+Tp: 3
+
+neighbor_radius: 1
+
+# defenders global/local sensing of enemies
+local_sensing: True
+
+# local vs. global communication between defenders (centralized vs decomposed approach)
+global_comms: False
+
+# defenders velocity [m/s]
+d_velocity: [4.0, 4.0, 4.0]
+
+# use local estimates of all defenders states
+use_local_estimates: True
+
+# ROS loop frequency
+update_freq: 50
+
+# home position of this agent (currently not used/implemented)
+home: [1.0, 1.0]
+
+# fixed altitude setpoint, for this agent
+altitude_setpoint: 3.0
+
+# use joystick (this is implemented for attackers only)
+enable_joystick: True
+# joystick scale: affect rate of position change
+joystick_factor: 2.0
+
+# whether to use GPS or directly local_position coordinates
+# Set True for outdoor and simulations test
+use_gps: True
+
+# whether to used simulated position, set True if using gazebo
+# False for hardware test
+use_sim: False
+
+# lat/long of zero position of the grid (lower left corner) in Gazebo/outdoor test
+lat0: 22.3176265
+long0: 39.0977047
+
+# fence for limiting agents motion
+# computed automatically from grid_corner_Po and grid_corner_PE  if use_grid_corners is True
+fence_min_x: 0.0
+fence_max_x: 50.0
+fence_min_y: 0.0
+fence_max_y: 50.0
+
+# attacker capture distance, [meter]
+capture_distance: 5.0
+
+# if true, use algorithm to compute attack plan
+# otherwise, joystick is expected to be used
+auto_attack: False
+
+# setting offboard in code or through transmitter
+# Safer to set it False for outdoor test
+set_offboard_in_code: False
