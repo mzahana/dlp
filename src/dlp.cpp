@@ -926,6 +926,20 @@ DLP::update_Xe(){
 
 	/* Local vs. global attackers sensing */
 	if (bLocalAttackerSensing){	// local
+
+		if (bEnemyBookKeeping){
+			if (bRandomizeEnemyLoc){
+				MatrixXd rndMat = DLP::generate_random_sectors(NrandomSectors);
+				for (int i=0; i<NrandomSectors; i++){
+					int s = rndMat(i,0);
+					xe0(s,0) = 1.0;
+				}
+			}
+			else{ // use previously preditcited locations
+				xe0 = Xe.block(0,0,ns,1);
+			}
+		}
+
 		sense_local_attackers();
 		if (N_local_attackers > 0){
 			int loc=0;
@@ -935,6 +949,8 @@ DLP::update_Xe(){
 				xe0(loc,0)=1.0;
 			}
 		}
+		if (bEnemyBookKeeping)
+			xe0 = attacker_discount_factor*xe0;
 	}
 	else{											// global
 		int loc=0;
@@ -1390,6 +1406,13 @@ void
 DLP::update_static_obstacles_constraints(){
 	if(DEBUG)
 		printf("[%s]: Updating static obstacle vector...\n", __FUNCTION__);
+
+	// exit if no obstacles are addigned
+	if (N_static_obs < 1){
+		if(DEBUG)
+				printf("[%s]: No static obstacles are assigned\n", __FUNCTION__);
+		return;
+	}
 	// initialize vector to zeros
 	X_static_obs = MatrixXf::Constant(ns*Tp,1, 0.0);
 
@@ -2336,4 +2359,81 @@ DLP::set_origin_shifts(float x, float y){
 	origin_shifts(0,0) = x;
 	origin_shifts(1,0) = y;
 	return;
+}
+
+/**
+* Generates a set of random sectors between 1 and ns
+* @param n: number of sectors
+* @return pointer to matrix of set of sectors
+*/
+MatrixXd
+DLP::generate_random_sectors(int n){
+	
+	if (DEBUG){
+		cout << "[" << __FUNCTION__ << "] " << "Generating " << n << " random sectors" << endl;
+	}
+
+	MatrixXd mat = MatrixXd::Constant(n,1, 0);
+	/* sanity check */
+	if (n<0 or n > (nRows*nCols)){
+		cout << "[ERROR] in [" << __FUNCTION__ << "] number of sectors is not in range! Exiting." << endl;
+		return mat;
+	}
+
+	int floor, ceiling, range;
+
+	floor = 1; ceiling = nRows*nCols;
+
+
+	/* initialize random seed */
+	srand( (unsigned int)time(NULL) );
+	range = (ceiling - floor) + 1;
+	for (int i=0; i<n; i++){
+		int rnd = floor + rand() % range;
+		mat(i,0) = rnd;
+	}
+
+	if (DEBUG){
+		cout << "[" << __FUNCTION__ << "] " << "Generated " << n << " random sectors: " << mat.transpose() << endl;
+	}
+}
+
+
+/**
+* sets bEnemyBookKeeping
+*/
+void
+DLP::set_bEnemyBookKeeping(bool f){
+	bEnemyBookKeeping = f;
+}
+
+/**
+* sets bRandomizeEnemyLoc
+*/
+void
+DLP::set_bRandomizeEnemyLoc(bool f){
+	bRandomizeEnemyLoc = f;
+}
+
+/**
+* Sets numbner of random sectors NrandomSectors
+*/
+void
+DLP::set_NrandomSectors(int n){
+	NrandomSectors = n;
+}
+
+/**
+* sets attacker_discount_factor
+*/
+void
+DLP::set_attacker_discount_factor(float n){
+
+	/* sanity check */
+	if (n < 0 or n >= 1){
+		cout << "[" << __FUNCTION__ << "] " << "discount factor is not in range. 0 < n < 1. Setting to default (0.9)" << endl;
+		attacker_discount_factor = 0.9;
+		return;
+	}
+	attacker_discount_factor = n;
 }

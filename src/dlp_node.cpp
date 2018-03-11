@@ -277,6 +277,18 @@ int main(int argc, char **argv)
 	bool bUseLocalEstimate;
 	nh.param("use_local_estimates", bUseLocalEstimate, true);
 
+	/* whether to use previously predicted attacker locations or not */
+	bool bEnemyBookKeeping;
+	nh.param("bEnemyBookKeeping", bEnemyBookKeeping, false);
+
+	/* Number of random enemy sectors to start with when bEnemyBookKeeping=True */
+	int NrandomSectors;
+	nh.param("NrandomSectors", NrandomSectors, 5);
+
+	/* enemy dicount factor for local prediction */
+	float attacker_discount_factor;
+	nh.param<float>("attacker_discount_factor", attacker_discount_factor, 0.9);
+
 	std::vector<int> grid_size, default_grid_size;
 	// default to 7x7 grid
 	default_grid_size.push_back(7); default_grid_size.push_back(7);
@@ -434,6 +446,11 @@ int main(int argc, char **argv)
 	problem.set_Nd(Nd);
 	problem.set_Ne(Ne);
 
+	problem.set_bEnemyBookKeeping(bEnemyBookKeeping);
+	problem.set_NrandomSectors(NrandomSectors);
+	problem.set_attacker_discount_factor(attacker_discount_factor);
+	bool bInitRndEnemyLoc = true;
+
 	/* update time stamp */
 	problem.set_dt(1.0/update_freq);
 
@@ -547,6 +564,14 @@ int main(int argc, char **argv)
 		//chatter_pub.publish(msg);
 
 		start = clock();
+
+		/* initialize enemy random locations only once */
+		if (bInitRndEnemyLoc){
+				problem.set_bRandomizeEnemyLoc(true);
+				bInitRndEnemyLoc = false;
+		}
+		else
+			problem.set_bRandomizeEnemyLoc(false);
 
 
 		// get defenders locations

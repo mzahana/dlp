@@ -352,15 +352,15 @@ public:
 	*/
 	MatrixXf& get_ENU_from_sector(int s);
 
-/**
-* Converts from sector number to ENU coordinates without considering origin shifts.
-* Origin is at lower left corner.
-* East (x), North (y), Up (z).
-* It uses sectors resolution defined by dcosl_x, drows_y.
-* @param s, sector number
-* @return poitner to Matrix of xyz in ENU.
-*/
-MatrixXf& get_ENU_from_sector_noShift(int s);
+	/**
+	* Converts from sector number to ENU coordinates without considering origin shifts.
+	* Origin is at lower left corner.
+	* East (x), North (y), Up (z).
+	* It uses sectors resolution defined by dcosl_x, drows_y.
+	* @param s, sector number
+	* @return poitner to Matrix of xyz in ENU.
+	*/
+	MatrixXf& get_ENU_from_sector_noShift(int s);
 
 
 	/**
@@ -371,6 +371,33 @@ MatrixXf& get_ENU_from_sector_noShift(int s);
 	* @return sector number
 	*/
 	int get_sector_from_ENU(MatrixXf& mat);
+
+	/**
+	* Generates a set of random sectors between 1 and ns
+	* @param n: number of sectors
+	* @return pointer to matrix of set of sectors
+	*/
+	MatrixXd generate_random_sectors(int n);
+
+	/**
+	* Sets numbner of random sectors NrandomSectors
+	*/
+	void set_NrandomSectors(int n);
+
+	/**
+	* sets bEnemyBookKeeping
+	*/
+	void set_bEnemyBookKeeping(bool f);
+
+	/**
+	* sets bRandomizeEnemyLoc
+	*/
+	void set_bRandomizeEnemyLoc(bool f);
+	
+	/**
+	* sets attacker_discount_factor
+	*/
+	void set_attacker_discount_factor(float n);
 
 
 private:
@@ -577,6 +604,26 @@ private:
 	*/
 	MatrixXf Xe;
 	bool XeIsSet;
+
+	/**
+	* Number of random sectors to initialize enemy locatoins
+	*/
+	int NrandomSectors;
+
+	/**
+	* Flag for whether to use previously predicted enemy locations or not
+	*/
+	bool bEnemyBookKeeping;
+
+	/**
+	* Flag to randomize enemy locations if bEnemyBookKeeping is enabled
+	*/
+	bool bRandomizeEnemyLoc;
+
+	/**
+	* Discount factor for enemy locatio prediction
+	*/
+	float attacker_discount_factor;
 
 	/**
 	* input matrix, B= Bin- Bout.

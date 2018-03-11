@@ -61,6 +61,15 @@ local_sensing: True
 # local vs. global communication between defenders (centralized vs decomposed approach)
 global_comms: False
 
+# whether to use previously predicted attacker locations or not
+bEnemyBookKeeping: False
+
+# Number of random enemy sectors to start with when bEnemyBookKeeping=True
+NrandomSectors: 5
+
+# Discount factor for enemy locatio prediction
+attacker_discount_factor: 0.5
+
 # defenders velocity [m/s]
 d_velocity: [4.0, 4.0, 4.0]
 

@@ -76,8 +76,11 @@ int main(){
 	problem.set_d_current_locations(dloc);
 	problem.set_e_current_locations(eloc);
 	problem.set_my_current_location(dloc(myID,0));
+	problem.set_static_obstacles(1, Base);
 
 	problem.setup_problem();
+
+	MatrixXd rndMat = problem.generate_random_sectors(5);
 
 
 	start = clock();
@@ -128,6 +131,8 @@ int main(){
 
 		cout << "xyz from sector "<< dloc(myID,0) << " = " << enu.transpose() << "\n";
 		cout << "sector from " << enu.transpose() << " = " << sector_from_enu << "\n";
+
+		cout << "Random sector: " << rndMat.transpose() << endl;
 	}
 
 	return 0;
