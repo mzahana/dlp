@@ -14,8 +14,8 @@ use_grid_corners: True
 # Po: origin, PE: east corner, PN: north corner, PNE: north-east corner, w.r.t Po
 #grid_corner_Po: [47.397742, 8.545594]
 #outdoor
-grid_corner_Po: [22.3174809, 39.0976939]
-grid_corner_PE: [22.3174261, 39.0977431]
+grid_corner_Po: [22.3176265, 39.0977047]
+grid_corner_PE: [22.3172996,  39.0977929]
 
 #grid_corner_PE: [47.3977418, 8.5462601]
 #grid_corner_PE: [47.3981254, 8.5457602]
@@ -43,7 +43,7 @@ origin_shifts: [0.0, 0.0]
 # for big world
 #origin_shifts: [50.0, 50.0]
 
-N_defenders: 3
+N_defenders: 1
 N_attackers: 1
 
 # count of base sectors
@@ -158,8 +158,8 @@ use_sim: False
 # lat/long of zero position in Gazebo
 # for small and medium worlds
 #outdoor
-lat0: 22.3174809
-long0: 39.0976939
+lat0: 22.3176265
+long0: 39.0977047
 
 # for big world
 #lat0: 47.3972911
