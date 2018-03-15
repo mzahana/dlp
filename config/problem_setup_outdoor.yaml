@@ -3,6 +3,8 @@ debug: False
 # unique agent ID, starts from 0
 myID: 0
 
+# set to True if doing outdoor test
+outdoor: True
 # [rows, columns]
 grid_size: [8,8]
 

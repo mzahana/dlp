@@ -32,12 +32,21 @@ class MasterC():
 		self.Nd = rospy.get_param('N_defenders', 3)
 		self.Ne = rospy.get_param('N_attackers', 2)
 
+		self.nBase = rospy.get_param('nBase',1)
+		self.Base = rospy.get_param('Base', [1])
+
 		self.use_grid_corners = rospy.get_param('use_grid_corners', False)
 		# grid size
 		self.grid_size =  rospy.get_param('grid_size', [10,10])
 		# enforce square grid
 		if (self.use_grid_corners):
 			self.grid_size[1] = self.grid_size[0]
+
+		# Whether to use Gazebo or not
+		self.use_sim = rospy.get_param('use_sim', False)
+
+		# capture distance, [m]
+		self.cap_dist = rospy.get_param('capture_distance', 1.0)
 
 		# GPS coords of grid zero position
 		self.lat0 = rospy.get_param('lat0', 47.397742)
@@ -59,23 +68,28 @@ class MasterC():
 			self.sector_size = [1,1]
 			self.sector_size[0] = self.uti.grid_side_length / self.grid_size[0]
 			self.sector_size[1] = self.sector_size[0]
-
-		# Whether to use Gazebo or not
-		self.use_sim = rospy.get_param('use_sim', False)
-
-		# capture distance, [m]
-		self.cap_dist = rospy.get_param('capture_distance', 1.0)
+			l = self.sector_size[0]
+			self.cap_dist = sqrt(2*(l**2)) + 0.5 # 0.5 is extra margin for outdoor GPS uncertainty
 		
 		# game time, [sec]
 		self.Tgame = 120
 
+		self.outdoor = rospy.get_param('outdoor', False)
+
 		self.d_gps_topic_names = []
 		for i in range(self.Nd):
-			self.d_gps_topic_names.append('/defender'+str(i+1)+'/mavros/global_position/raw/fix')
+			if self.outdoor:
+				dstr = '/defender_'
+				estr = '/attacker_'
+			else:
+				dstr = '/defender'
+				estr = '/attacker'
+
+			self.d_gps_topic_names.append(dstr+str(i+1)+'/mavros/global_position/raw/fix')
 
 		self.e_gps_topic_names = []
 		for i in range(self.Ne):
-			self.e_gps_topic_names.append('/attacker'+str(i+1)+'/mavros/global_position/raw/fix')
+			self.e_gps_topic_names.append(estr+str(i+1)+'/mavros/global_position/raw/fix')
 
 		# msgs
 		self.d_msg = DefendersState()
@@ -231,6 +245,29 @@ class MasterC():
 
 		return ( (row*nCols) - (nCols-col) )
 
+	def getSectorLoc(self, s):
+		nCols = self.grid_size[1]
+		r=ceil(s*1.0/nCols)
+		c=s%nCols
+		if (c == 0):
+			c = nCols
+
+		# return row, column
+		return (r,c)
+
+	# return x/y local ENU location of sector s
+	def sector2enu(self,s):
+		# get sector locatoin
+		r_y,c_x =  self.getSectorLoc(s)
+		dcols_x = self.sector_size[0]
+		drows_y = self.sector_size[1]
+		nRows = self.grid_size[0]
+		X = (c_x - 0.5)*dcols_x
+		Y = (nRows-r_y + 0.5)*drows_y
+		
+		return X,Y
+	
+
 	def battle(self):
 		self.master_msg.header.stamp = rospy.Time.now()
 		#  send battle command to all agents
@@ -270,6 +307,23 @@ class MasterC():
 			self.master_msg.allCaptured = True
 		else:
 			self.master_msg.allCaptured = False
+
+	def checkEnemyWin(self):
+		if (self.master_msg.enemy_win):
+			return
+
+		for e in range(self.Ne):
+			#print 'enemy ', e, 'is not captured' 
+			e_x = self.e_msg.enemy_position[e].x
+			e_y = self.e_msg.enemy_position[e].y
+
+			for b in range(self.nBase):
+				b_x, b_y = self.sector2enu(self.Base[b])
+				dist = sqrt( (e_x-b_x)**2+(e_y-b_y)**2 )
+				if (dist <= self.cap_dist):
+					self.master_msg.enemy_win = True
+					rospy.logwarn('An attacker WON! Defenders should land now. Attacker will keep in the air!')
+					return
 
 def main():
 

@@ -221,13 +221,13 @@ def main():
 			mode.setAutoLandMode()
 			break
 
-		'''
+		
 		if cb.master_msg.enemy_win:
 			cb.battle_flag = False
 			rospy.logwarn('An enemy WON! Defender %s: Landing', cb.my_id)
 			mode.setAutoLandMode()
 			break
-		'''
+		
 
 		if cb.arm_flag:
 			cb.battle_flag = False
