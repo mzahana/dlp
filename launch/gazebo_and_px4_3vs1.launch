@@ -6,7 +6,7 @@
 	<include file="$(find dlp)/launch/multi_uav_mavros_sitl_3vs1_medium_world.launch"/>
 
 	<!-- Launch simulated master node-->
-	<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+	<rosparam command="load" file="$(find dlp)/config/problem_setup_simulation_3vs1.yaml" />
 	<node pkg="dlp" type="supervisory_node_gps_3vs1.py" name="sim_supervisory_node"  required="true" output="screen">
 	</node>
 

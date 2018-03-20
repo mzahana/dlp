@@ -178,17 +178,18 @@ def main():
 
 		if cb.home_flag:
 			cb.battle_flag = False
+			cb.takeoff_flag = False
 			# TODO: set home position setpoint
 			cb.home_flag  = False
 		elif cb.takeoff_flag:
 			cb.battle_flag = False
 			# check if we are in the air
-			if cb.dlp_msg.my_current_local_position.z > 0.5:
+			if cb.dlp_msg.my_current_local_position.z > 1.0:
 				rospy.logwarn('Defender %s: Already in the air.', cb.my_id)
 				cb.takeoff_flag = False
 			else:
 				rospy.logwarn('Defender %s: Arm and Takeoff.', cb.my_id)
-				if cb.dlp_msg.my_current_position.z < 0.3:
+				if cb.dlp_msg.my_current_position.z < 0.5:
 					cb.setp.position.x = cb.dlp_msg.my_current_local_position.x
 					cb.setp.position.y = cb.dlp_msg.my_current_local_position.y
 				cb.setp.position.z = cb.altSp

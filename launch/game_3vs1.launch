@@ -2,7 +2,7 @@
 
 	<!-- global arguments -->
 	<!-- attacker1 joystick enable -->
-	<arg name="a1_joy" default="False"/>
+	<arg name="a1_joy" default="True"/>
 	<arg name="a1_joy_dev" default="/dev/input/js0"/>
 	<arg name="record_bag" default="False"/>
 	<arg name="topics" default="/defenders_locations /enemy_locations /takeoff /defender1/dlp_state /defender2/dlp_state /defender3/dlp_state /battle /commander /defender1/mavros/extended_state /defender2/mavros/extended_state /defender3/mavros/extended_state /attacker1/mavros/extended_state /defender1/mavros/local_position/velocity /defender2/mavros/local_position/velocity /defender3/mavros/local_position/velocity /attacker1/mavros/local_position/velocity /defender1/mavros/state /defender2/mavros/state /defender3/mavros/state /attacker1/mavros/state"/>
@@ -15,7 +15,7 @@
 	<group ns="defender1">
 
 		<arg name="id" default="0"/>
-		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+		<rosparam command="load" file="$(find dlp)/config/problem_setup_simulation_3vs1.yaml" />
 		<param name="myID" type="int" value="$(arg id)" />
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
@@ -29,7 +29,7 @@
 	<group ns="defender2">
 
 		<arg name="id" default="1"/>
-		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+		<rosparam command="load" file="$(find dlp)/config/problem_setup_simulation_3vs1.yaml" />
 		<param name="myID" type="int" value="$(arg id)" />
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
@@ -43,7 +43,7 @@
 	<group ns="defender3">
 
 		<arg name="id" default="2"/>
-		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+		<rosparam command="load" file="$(find dlp)/config/problem_setup_simulation_3vs1.yaml" />
 		<param name="myID" type="int" value="$(arg id)" />
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
@@ -59,10 +59,10 @@
 
 		<arg name="id" default="0"/>
 
-		<rosparam command="load" file="$(find dlp)/config/problem_setup.yaml" />
+		<rosparam command="load" file="$(find dlp)/config/problem_setup_simulation_3vs1.yaml" />
 
 		<param name="myID" type="int" value="$(arg id)" />
-		<param name="debug" value="true" />
+		<param name="debug" value="false" />
 		<param name="alpha" value="0.99" />
 		<param name="enable_joy" type="bool" value="$(arg a1_joy)" />
 

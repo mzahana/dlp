@@ -22,7 +22,7 @@ sector_size: [5.0, 5.0]
 origin_shifts: [0.0, 0.0]
 
 N_defenders: 3
-N_attackers: 3
+N_attackers: 1
 
 # count of base sectors
 nBase: 1
@@ -93,9 +93,9 @@ home: [1.0, 1.0]
 altitude_setpoint: 3.0
 
 # use joystick
-enable_joystick: False
+enable_joystick: True
 # joystick scale: affect rate os position change
-joystick_factor: 4.0
+joystick_factor: 8.0
 
 # whether to use GPS or directly local_position coordinates
 # False for indoor hardware test
@@ -123,7 +123,7 @@ capture_distance: 7.1
 
 # if true, use algorithm to compute attack plan
 # otherwise, joystick is expected to be used
-auto_attack: True
+auto_attack: False
 
 # setting offboard in code or through transmitter
 set_offboard_in_code: True

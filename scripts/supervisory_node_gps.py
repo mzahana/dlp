@@ -360,6 +360,7 @@ def main():
 	# Main loop
 	while not rospy.is_shutdown():
 		mObj.checkEnemyCapture()
+		mObj.checkEnemyWin()
 		mObj.battle()
 		mObj.d_msg.header.stamp = rospy.Time.now()
 		mObj.e_msg.header.stamp = rospy.Time.now()
