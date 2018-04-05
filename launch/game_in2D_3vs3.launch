@@ -1,0 +1,72 @@
+<launch>
+
+	<!-- Launch defenders nodes-->
+	<!-- defender1 -->
+	<group ns="defender1">
+
+		<arg name="id" default="0"/>
+		<rosparam command="load" file="$(find dlp)/config/problem_setup_2Dsimulation.yaml" />
+		<param name="myID" type="int" value="$(arg id)" />
+		<param name="home_sector" type="int" value="1" />
+
+		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
+    </node>
+		<node pkg="dlp" type="agent_dynamics_node.py" name="defender_dynamics_node_$(arg id)"  required="true" output="screen">
+    </node>
+
+	</group>
+
+	<!-- defender2 -->
+	<group ns="defender2">
+
+		<arg name="id" default="1"/>
+		<rosparam command="load" file="$(find dlp)/config/problem_setup_2Dsimulation.yaml" />
+		<param name="myID" type="int" value="$(arg id)" />
+		<param name="home_sector" type="int" value="10" />
+
+		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
+    </node>
+		<node pkg="dlp" type="agent_dynamics_node.py" name="defender_dynamics_node_$(arg id)"  required="true" output="screen">
+    </node>
+
+	</group>
+
+	<!-- defender3 -->
+	<group ns="defender3">
+
+		<arg name="id" default="2"/>
+		<rosparam command="load" file="$(find dlp)/config/problem_setup_2Dsimulation.yaml" />
+		<param name="myID" type="int" value="$(arg id)" />
+		<param name="home_sector" type="int" value="15" />
+
+		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
+    </node>
+		<node pkg="dlp" type="agent_dynamics_node.py" name="defender_dynamics_node_$(arg id)"  required="true" output="screen">
+    </node>
+	</group>
+
+	<!-- Launch attackers nodes-->
+	<!-- attacker1 -->
+	<group ns="attacker1">
+
+		<arg name="id" default="0"/>
+		<rosparam command="load" file="$(find dlp)/config/problem_setup_2Dsimulation.yaml" />
+		<param name="myID" type="int" value="$(arg id)" />
+		<param name="home_sector" type="int" value="99" />
+		<param name="isATTACKER" value="True" />
+		<param name="alpha" value="0.8" />
+		<param name="beta" value="-0.2" />
+
+		<node pkg="dlp" type="dlp_node_attacking" name="dlp_attacker_node_$(arg id)"  required="true" output="screen">
+    </node>
+		<node pkg="dlp" type="agent_dynamics_node.py" name="attacker_dynamics_node_$(arg id)"  required="true" output="screen">
+    </node>
+
+
+
+
+	</group>
+
+
+
+</launch>

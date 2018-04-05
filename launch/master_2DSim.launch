@@ -1,0 +1,11 @@
+<launch>
+
+	<!-- Launch supervisory nodes-->
+
+		<rosparam command="load" file="$(find dlp)/config/problem_setup_2Dsimulation.yaml" />
+
+		<node pkg="dlp" type="2DSim_supervisory_node.py" name="master_node_2DSim"  required="true" output="screen">
+    </node>
+
+
+</launch>

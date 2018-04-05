@@ -324,6 +324,9 @@ int main(int argc, char **argv)
 	bool use_sim;
 	nh.param("use_sim", use_sim, false);
 
+	bool b2DSim;
+	nh.param("sim_2D", b2DSim, false);
+
 	float p_lat0;
 	nh.param<float>("lat0", p_lat0, 47.397742);
 
@@ -394,7 +397,10 @@ int main(int argc, char **argv)
 
 	ros::Subscriber d_loc_sub = nh.subscribe("/defenders_locations", 1, &CallBacks::d_loc_cb, &cb);
 	ros::Subscriber e_loc_sub = nh.subscribe("/enemy_locations", 1, &CallBacks::e_loc_cb, &cb);
-	ros::Subscriber local_enu_sub = nh.subscribe("mavros/local_position/pose", 1, &CallBacks::local_enu_cb, &cb);
+	if (b2DSim)
+		ros::Subscriber local_enu_sub = nh.subscribe("local_pose", 1, &CallBacks::local_enu_cb, &cb);
+	else
+		ros::Subscriber local_enu_sub = nh.subscribe("mavros/local_position/pose", 1, &CallBacks::local_enu_cb, &cb);
 	ros::Subscriber gps_sub = nh.subscribe("mavros/global_position/raw/fix", 1, &CallBacks::gps_cb, &cb);
 
 	ros::Rate loop_rate(update_freq);

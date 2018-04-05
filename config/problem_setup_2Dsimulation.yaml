@@ -1,0 +1,120 @@
+# Setup problem/game parameters before running the dlp_node
+debug: False
+# unique agent ID, starts from 0
+myID: 0
+
+# [rows, columns]
+grid_size: [10,10]
+
+# sector size (x,y) in ENU, in meter(s)
+sector_size: [5.0, 5.0]
+
+# origin shifts (dx,dy) from (0,0) in ENU, in meter(s)
+origin_shifts: [0.0, 0.0]
+
+N_defenders: 3
+N_attackers: 1
+
+# count of base sectors
+nBase: 1
+
+# set of base sectors
+### For Gazebo simulation
+
+#Base: [46]
+# for medium world
+Base: [35]
+
+# count of base reference sectors
+nBaseRef: 4
+# with no obstacles
+#nBaseRef: 8
+
+# more obstacles
+BaseRef: [25, 34, 36, 45]
+# with no obstacles
+#BaseRef: [24, 25, 26, 34, 36, 44, 45, 46]
+
+# Sector (and # of sectors) locations of static obstacles
+# more obstacles
+Nobs_sectors: 8
+obs_sectors: [35, 33, 24, 26, 47, 56, 44, 46]
+# with no obstacles, except the base
+#Nobs_sectors: 1
+#obs_sectors: [35]
+
+
+# strategy weights
+alpha: -0.99
+beta: -0.01
+
+# prediction horizon
+Tp: 4
+
+neighbor_radius: 1
+
+# defenders global/local sensing of enemies
+local_sensing: True
+
+# local vs. global communication between defenders (centralized vs decomposed approach)
+global_comms: False
+
+# whether to use previously predicted attacker locations or not
+bEnemyBookKeeping: False
+
+# Number of random enemy sectors to start with when bEnemyBookKeeping=True
+NrandomSectors: 50
+
+# Discount factor for enemy locatio prediction
+attacker_discount_factor: 0.6
+
+# defenders velocity [m/s]
+d_velocity: [4.0, 4.0, 4.0]
+
+# use local estimates of all defenders states
+use_local_estimates: False
+
+# maximum ROS loop frequency
+update_freq: 50
+
+# home position
+home: [1.0, 1.0]
+
+# home sector
+home_sector: 1
+
+# fixed altitude setpoint
+altitude_setpoint: 3.0
+
+# use joystick
+enable_joystick: False
+# joystick scale: affect rate os position change
+joystick_factor: 4.0
+
+# step length along target position vector
+cmd_step: 0.2
+
+# whether to used simulated position, set True if using gazebo
+# False for hardware test
+use_sim: False
+
+# for 2D simulation only with simple linear dynamics
+sim_2D: True
+
+# for medium world
+# computed automatically from grid_corner_Po and grid_corner_PE  if use_grid_corners is True
+fence_min_x: 0.0
+fence_max_x: 50.0
+fence_min_y: 0.0
+fence_max_y: 50.0
+
+# attacker capture distance, [meter]
+# for medium world
+capture_distance: 7.1
+
+# if true, use algorithm to compute attack plan
+# otherwise, joystick is expected to be used
+auto_attack: True
+
+# setting offboard in code or through transmitter
+set_offboard_in_code: True
