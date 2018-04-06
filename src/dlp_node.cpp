@@ -22,6 +22,7 @@
 #include "dlp/EnemyState.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/Point32.h"
+#include "geometry_msgs/Point.h"
 #include "sensor_msgs/NavSatFix.h"
 
 #define PI 3.14159265
@@ -75,22 +76,15 @@ public:
 	// my local ENU position, from mavros.
 
 	void local_enu_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
-
 		local_enu_msg.header		= msg->header;
-		local_enu_msg.pose.position.x	= msg->pose.position.x;
-		local_enu_msg.pose.position.y	= msg->pose.position.y;
-		local_enu_msg.pose.position.z	= msg->pose.position.z;
+		local_enu_msg.pose.position	= msg->pose.position;
 		/*
 		cout << "cb3 \n";
 		cout << "local_pos: " << local_enu_msg.pose.position.x << " "
 								<< local_enu_msg.pose.position.y << " "
 								<< local_enu_msg.pose.position.z << "\n";
 		*/
-		/*
-		double v_x = msg->pose.position.x;
-		double v_y = msg->pose.position.y;
-		double v_z = msg->pose.position.z;
-		*/
+
 	}
 	
 	// current gps coordinates
@@ -428,13 +422,15 @@ int main(int argc, char **argv)
 
 	ros::Subscriber d_loc_sub = nh.subscribe("/defenders_locations", 1, &CallBacks::d_loc_cb, &cb);
 	ros::Subscriber e_loc_sub = nh.subscribe("/enemy_locations", 1, &CallBacks::e_loc_cb, &cb);
+
+	ros::Subscriber local_enu_sub;
 	if (b2DSim){
-		cout << "subs to local enu" << endl;
-		ros::Subscriber local_enu_sub = nh.subscribe("local_pose", 1, &CallBacks::local_enu_cb, &cb);
+		local_enu_sub = nh.subscribe("local_pose", 1, &CallBacks::local_enu_cb, &cb);
 	}
 	else{
-		ros::Subscriber local_enu_sub = nh.subscribe("mavros/local_position/pose", 1, &CallBacks::local_enu_cb, &cb);
+		local_enu_sub = nh.subscribe("mavros/local_position/pose", 1, &CallBacks::local_enu_cb, &cb);
 	}
+
 	ros::Subscriber gps_sub = nh.subscribe("mavros/global_position/raw/fix", 1, &CallBacks::gps_cb, &cb);
 
 	ros::Rate loop_rate(update_freq);

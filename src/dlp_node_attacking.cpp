@@ -83,9 +83,6 @@ public:
 								<< local_enu_msg.pose.position.z << "\n";
 		*/
 
-		double v_x = msg->pose.position.x;
-		double v_y = msg->pose.position.y;
-		double v_z = msg->pose.position.z;
 	}
 	
 	// current gps coordinates
@@ -397,10 +394,13 @@ int main(int argc, char **argv)
 
 	ros::Subscriber d_loc_sub = nh.subscribe("/defenders_locations", 1, &CallBacks::d_loc_cb, &cb);
 	ros::Subscriber e_loc_sub = nh.subscribe("/enemy_locations", 1, &CallBacks::e_loc_cb, &cb);
+
+	ros::Subscriber local_enu_sub;
 	if (b2DSim)
-		ros::Subscriber local_enu_sub = nh.subscribe("local_pose", 1, &CallBacks::local_enu_cb, &cb);
+		local_enu_sub = nh.subscribe("local_pose", 1, &CallBacks::local_enu_cb, &cb);
 	else
-		ros::Subscriber local_enu_sub = nh.subscribe("mavros/local_position/pose", 1, &CallBacks::local_enu_cb, &cb);
+		local_enu_sub = nh.subscribe("mavros/local_position/pose", 1, &CallBacks::local_enu_cb, &cb);
+
 	ros::Subscriber gps_sub = nh.subscribe("mavros/global_position/raw/fix", 1, &CallBacks::gps_cb, &cb);
 
 	ros::Rate loop_rate(update_freq);

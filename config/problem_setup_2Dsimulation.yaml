@@ -49,7 +49,7 @@ alpha: -0.99
 beta: -0.01
 
 # prediction horizon
-Tp: 4
+Tp: 3
 
 neighbor_radius: 1
 
@@ -60,7 +60,7 @@ local_sensing: True
 global_comms: False
 
 # whether to use previously predicted attacker locations or not
-bEnemyBookKeeping: False
+bEnemyBookKeeping: True
 
 # Number of random enemy sectors to start with when bEnemyBookKeeping=True
 NrandomSectors: 50
@@ -72,7 +72,7 @@ attacker_discount_factor: 0.6
 d_velocity: [4.0, 4.0, 4.0]
 
 # use local estimates of all defenders states
-use_local_estimates: False
+use_local_estimates: True
 
 # maximum ROS loop frequency
 update_freq: 50
@@ -92,7 +92,7 @@ enable_joystick: False
 joystick_factor: 4.0
 
 # step length along target position vector
-cmd_step: 0.2
+cmd_step: 0.5
 
 # whether to used simulated position, set True if using gazebo
 # False for hardware test

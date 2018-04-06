@@ -54,8 +54,9 @@
 		<param name="myID" type="int" value="$(arg id)" />
 		<param name="home_sector" type="int" value="99" />
 		<param name="isATTACKER" value="True" />
-		<param name="alpha" value="0.8" />
-		<param name="beta" value="-0.2" />
+		<param name="alpha" value="0.5" />
+		<param name="beta" value="-0.5" />
+		<param name="cmd_step" value="0.1" />
 
 		<node pkg="dlp" type="dlp_node_attacking" name="dlp_attacker_node_$(arg id)"  required="true" output="screen">
     </node>
