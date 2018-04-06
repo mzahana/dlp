@@ -233,9 +233,15 @@ def main():
 		# check if this attacker is captured
 		if dyn.iamCaptured:
 			rospy.logwarn('Attacker %s is captured!', dyn.my_id)
-			rospy.logwarn('Attacker %s: Landing', dyn.my_id)
+			rospy.logwarn('Attacker %s: Stopping', dyn.my_id)
 			dyn.battle_flag = False
 			dyn.disarm_flag = True
+
+		if dyn.master_msg.enemy_win:
+			dyn.battle_flag = False
+			dyn.disarm_flag = True
+			dyn.arm_flag = False
+			rospy.logwarn('An enemy WON! Defender %s: Stopping', dyn.my_id)
 
 		#print "=== x/y", dyn.current_pos.pose.position.x, "/", dyn.current_pos.pose.position.y
 
