@@ -1575,7 +1575,6 @@ DLP::sense_neighbors(){
     intersection_set.resize(it-intersection_set.begin());
 	N_sensed_neighbors = intersection_set.size();
 	// fill sensed_neighbors matrix
-	sensed_neighbors_full_msg = MatrixXf::Constant(Nd,1,0.0);
 	if (N_sensed_neighbors>0){
 		// initialize the size
 		sensed_neighbors = MatrixXf::Constant(N_sensed_neighbors,1,0.0);
@@ -1585,11 +1584,9 @@ DLP::sense_neighbors(){
 		}
 		/* fill the sensed_neighbors_full_msg */
 		for (int a=0; a<Nd; a++){
-			if (not(a == myID)){
-				for (int n=0; n<N_sensed_neighbors; n++){
-					if (d_current_locations(a,0) == sensed_neighbors(n,0))
-						sensed_neighbors_full_msg(a,0)= d_current_locations(a,0);
-				}
+			for (int n=0; n<N_sensed_neighbors; n++){
+				if (d_current_locations(a,0) == sensed_neighbors(n,0))
+					sensed_neighbors_full_msg(a,0)= d_current_locations(a,0);
 			}
 		}
 	}
