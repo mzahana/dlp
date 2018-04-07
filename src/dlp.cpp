@@ -1547,6 +1547,7 @@ DLP::sense_neighbors(){
 	int L =2*Nr; /* radius of sensing; 2 hops */
 	int N =DLP::get_NeighborSectors(my_current_location,L);
 	float *N_set; /* C array of set of neighbors, myself included*/
+	sensed_neighbors_full_msg = MatrixXf::Constant(Nd,1,0.0);
 	/*
 	for (int i=0; i< N ; i++){
 		N_set[i] = neighbor_sectors(i,0);
@@ -1563,16 +1564,7 @@ DLP::sense_neighbors(){
 	}
 	*/
 
-	/* fill the sensed_neighbors_full_msg */
-	sensed_neighbors_full_msg = MatrixXf::Constant(Nd,1,0.0);
-	for (int a=0; a<Nd; a++){
-		if (not(a == myID)){
-			for (int n=0; n<N; n++){
-				if (d_current_locations(a,0) == neighbor_sectors(n,0))
-					sensed_neighbors_full_msg(a,0)= d_current_locations(a,0);
-			}
-		}
-	}
+
 	others_set = d_current_locations.data();
 
 	vector<int> intersection_set(Nd);// vector stores intersection set
@@ -1583,12 +1575,22 @@ DLP::sense_neighbors(){
     intersection_set.resize(it-intersection_set.begin());
 	N_sensed_neighbors = intersection_set.size();
 	// fill sensed_neighbors matrix
+	sensed_neighbors_full_msg = MatrixXf::Constant(Nd,1,0.0);
 	if (N_sensed_neighbors>0){
 		// initialize the size
 		sensed_neighbors = MatrixXf::Constant(N_sensed_neighbors,1,0.0);
 		// fill
 		for (int i=0; i<N_sensed_neighbors; i++){
 			sensed_neighbors(i,0)=intersection_set[i];
+		}
+		/* fill the sensed_neighbors_full_msg */
+		for (int a=0; a<Nd; a++){
+			if (not(a == myID)){
+				for (int n=0; n<N_sensed_neighbors; n++){
+					if (d_current_locations(a,0) == sensed_neighbors(n,0))
+						sensed_neighbors_full_msg(a,0)= d_current_locations(a,0);
+				}
+			}
 		}
 	}
 	if (DEBUG){
