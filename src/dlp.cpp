@@ -360,6 +360,24 @@ DLP::get_sensed_neighbors(){
 }
 
 /**
+* Returns pointer to vector of sensed_neighbors_full_msg.
+* @return pointer to vector of sensed_neighbors_full_msg.
+*/
+MatrixXf&
+DLP::get_sensed_neighbors_full_msg(){
+	return sensed_neighbors_full_msg;
+}
+
+/**
+* Returns pointer to vector of sensed_neighbors_predicted_locations.
+* @return pointer to vector of sensed_neighbors_predicted_locations.
+*/
+MatrixXf&
+DLP::get_sensed_neighbors_predicted_locations(){
+	return sensed_neighbors_predicted_locations;
+}
+
+/**
 * Returns numbers of sensed attackers
 * @return <int> number of sensed attackers.
 */
@@ -1070,7 +1088,7 @@ DLP::setup_defenders_feedback_matrix(){
 		cumm_prob = 0.0; // cummulative sum of probs
 		sa_maxw = a_loc; // attacker sector with most probable move
 		max_prob = 0.0; // highest probabilty
-	
+
 		for (int j=0; j<N; j++){
 			int sj = neighbor_sectors(j,0);
 			float min_dist_sj = DLP::get_min_dist_to_base(sj);
@@ -1089,8 +1107,8 @@ DLP::setup_defenders_feedback_matrix(){
 			sa_maxw = a_loc;
 		}
 		/* Now we got the most probable move of this attacker from defenders point of view, sa_maxw */
-		
-		/* Compute the probabilities of defenders next moves and store them in the G feedback matrix 
+
+		/* Compute the probabilities of defenders next moves and store them in the G feedback matrix
 		* Notice that we are looping over Ns NOT Nd, because we are  playing from attackers point of view!
 		*/
 		for (int d=0; d<Ne; d++){
@@ -1132,7 +1150,7 @@ DLP::setup_defenders_feedback_matrix(){
 
 	if (DEBUG)
 		printf("[%s]: Done setting up defenders feedback matrix.\n", __FUNCTION__);
-	
+
 	return;
 }
 
@@ -1365,7 +1383,7 @@ DLP::setup_glpk_local_problem(){
 			}
 		}
 	}
-	
+
 
 
 	/*
@@ -1504,7 +1522,7 @@ DLP::update_collision_constraint(){
 				collision_set(s,0) = intersection_set[s];
 			}
 		}
-		
+
 	}
 	x_obs_s = x_obs.sparseView();
 
@@ -1544,6 +1562,17 @@ DLP::sense_neighbors(){
 		others_set[i]=d_current_locations(i,0);
 	}
 	*/
+
+	/* fill the sensed_neighbors_full_msg */
+	sensed_neighbors_full_msg = MatrixXf::Constant(Nd,1,0.0);
+	for (int a=0; a<Nd; a++){
+		if (not(a == myID)){
+			for (int n=0; n<N; n++){
+				if (d_current_locations(a,0) == neighbor_sectors(n,0))
+					sensed_neighbors_full_msg(a,0)= d_current_locations(a,0);
+			}
+		}
+	}
 	others_set = d_current_locations.data();
 
 	vector<int> intersection_set(Nd);// vector stores intersection set
@@ -1664,7 +1693,7 @@ DLP::sense_and_estimate_defenders_locations(){
 	*/
 	if (DEBUG)
 		printf("[%s]: Estimating locations of non-sensed defenders...\n", __FUNCTION__);
-	
+
 	for (int i=0; i < Nd; i++){
 		if (bSensed_defenders[i]){
 			/* if sensed, use true position */
@@ -1789,7 +1818,7 @@ DLP::update_LP(){
 	clock_t start, end;
 	start = clock();
 
-	DLP::update_X0();		
+	DLP::update_X0();
 
 	DLP::update_Xe();
 
@@ -1831,7 +1860,7 @@ DLP::update_LP_with_local_estimate(){
 	start = clock();
 
 	DLP::update_X0_estimate();
-	
+
 
 	DLP::update_Xe();
 
@@ -1906,7 +1935,7 @@ DLP::update_LP_dist(){
 		cout << "[" << __FUNCTION__ << "] Done updating local LP in : " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
 		cout << "================================== \n";
 	}
-	
+
 	return;
 }
 
@@ -2073,7 +2102,7 @@ DLP::extract_centralized_solution(){
 		} /* done looping over neighbors */
 	} /* done looping over d_next_locations */
 
-	
+
 
 	/* get this agent's next sector */
 	my_next_location = d_next_locations(myID,0);
@@ -2152,7 +2181,7 @@ DLP::extract_local_solution_estimate(){
 		} /* done looping over neighbors */
 	} /* done looping over d_next_locations */
 
-	
+
 
 	/* get this agent's next sector */
 	my_next_location = d_next_locations(myID,0);
@@ -2246,6 +2275,18 @@ DLP::extract_local_solution(){
 	if (N_sensed_neighbors>0){
 		for (int i=0; i<N_sensed_neighbors; i++){
 			neighbor_next_locations(i,0)=d_next_local_locations(i+1,0);
+		}
+	}
+
+	// update neighbors next locations, in full msg
+	// with zeros at locations of non neighbors
+	sensed_neighbors_predicted_locations = MatrixXf::Constant(Nd,1,0.0);
+	if (N_sensed_neighbors>0){
+		for (int a=0; a<Nd; a++){
+			for (int n=0; n<N_sensed_neighbors; n++){
+				if (sensed_neighbors_full_msg(a,0) == d_current_local_locations(n+1,0))
+					sensed_neighbors_predicted_locations(a,0) = d_next_local_locations(n+1,0);
+			}
 		}
 	}
 	return;
@@ -2368,7 +2409,7 @@ DLP::set_origin_shifts(float x, float y){
 */
 MatrixXd
 DLP::generate_random_sectors(int n){
-	
+
 	if (DEBUG){
 		cout << "[" << __FUNCTION__ << "] " << "Generating " << n << " random sectors" << endl;
 	}

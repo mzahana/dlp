@@ -36,6 +36,7 @@
  * TODO
  * add a ROS paramter that is used checks if local state estimate (of defenders) is required
  * WHY origin shifts are hardcoded to zero in line 507 ??????
+ * if local sensing is set, return local enmies only NOT all
  */
 
 /**
@@ -86,7 +87,7 @@ public:
 		*/
 
 	}
-	
+
 	// current gps coordinates
 	void gps_cb(const sensor_msgs::NavSatFix::ConstPtr& msg){
 		gps_msg.header		= msg->header;
@@ -230,8 +231,8 @@ public:
 		lat = lat_rad * 180.0 / PI;
 		lon = lon_rad * 180.0 / PI;
 	}
-	
-}; 
+
+};
 
 int main(int argc, char **argv)
 {
@@ -305,7 +306,7 @@ int main(int argc, char **argv)
 	nh.param< vector<int> >("Base", base, default_base);
 	nh.param< vector<int> >("BaseRef", baseRef, default_baseRef);
 
-	/**	
+	/**
 	* loading static obstacles ROS parameters
 	*/
 	int N_static_obs;
@@ -387,7 +388,7 @@ int main(int argc, char **argv)
 	// object of Helpers calss
 	Helpers hp;
 	CallBacks cb;
-	
+
 	hp.lat0 = p_lat0; hp.lon0 = p_long0;
 
 	/**
@@ -441,7 +442,7 @@ int main(int argc, char **argv)
 	DLP problem;
 	problem.DEBUG = bDebug;
 	problem.set_myID(myID);
-	
+
 	/* set local vs global enemy sensing*/
 	problem.set_local_attacker_sensing(bLocalSensing);
 
@@ -493,6 +494,9 @@ int main(int argc, char **argv)
 	MatrixXf sensedN;
 	MatrixXf neighbors_next_loc;
 
+	MatrixXf sensed_neighbors_full_msg = MatrixXf::Constant(Nd,1,0.0);
+	MatrixXf sensed_neighbors_predicted_locations = MatrixXf::Constant(Nd,1,0.0);
+
 
 	MatrixXf next_loc; /* next optimal locations */
 
@@ -501,7 +505,7 @@ int main(int argc, char **argv)
 
 
 	clock_t start, end;
-	
+
 
 	// Initialize defenders/enemy messages
 	for (int i=0; i<Nd; i++){
@@ -511,7 +515,7 @@ int main(int argc, char **argv)
 	for (int i=0; i<Ne; i++){
 		eloc(i,0) = i+Nd+1;
 	}
-	
+
 	cb.d_loc_msg.defenders_count = Nd;
 	cb.e_loc_msg.enemy_count = Ne;
 	cb.d_loc_msg.defenders_sectors.resize(Nd);
@@ -548,10 +552,10 @@ int main(int argc, char **argv)
 	problem.set_my_current_location(dloc(myID,0));
 
 	/* set static obstacles sectors */
-	MatrixXf obstacles_sectors(N_static_obs,1); 
+	MatrixXf obstacles_sectors(N_static_obs,1);
 	for (int i=0; i< N_static_obs; i++)
 		obstacles_sectors(i,0) = obstacles_set[i];
-	
+
 	problem.set_static_obstacles(N_static_obs, obstacles_sectors);
 
 	problem.setup_problem();
@@ -602,7 +606,7 @@ int main(int argc, char **argv)
 		// get enemy locations
 		eloc = MatrixXf::Constant(Ne,1,0.0);
 		for (int i=0; i< cb.e_loc_msg.enemy_count; i++){
-			
+
 			if (cb.e_loc_msg.is_captured[i]){
 				eloc(i,0) = 0.0;
 			}
@@ -616,7 +620,7 @@ int main(int argc, char **argv)
 		if (problem.DEBUG)
 			cout << "[dlp_node] [loop] e_loc:  " << eloc.transpose() << "\n";
 		problem.set_e_current_locations(eloc);
-		
+
 		// set my current location
 		if (use_gps){
 			if(use_grid_corners){
@@ -731,7 +735,7 @@ int main(int argc, char **argv)
 
 		// enu location of next target sector, considering shifts in the origin!!!
 		enu = problem.get_ENU_from_sector_noShift(problem.get_my_next_location());
-		
+
 		if (use_gps){// where each vehicle's local fixed frame can be different
 			// TODO
 			// set current grid position
@@ -739,7 +743,7 @@ int main(int argc, char **argv)
 			my_state.my_current_position.y = (float)hp.dy;
 			my_state.my_current_position.z = (float)cb.local_enu_msg.pose.position.z;
 
-	
+
 			// set next local grid position
 			my_state.my_next_position.x = enu(0,0);
 			my_state.my_next_position.y = enu(1,0);
@@ -771,7 +775,7 @@ int main(int argc, char **argv)
 			my_state.my_current_local_position.x = (float)cb.local_enu_msg.pose.position.x;
 			my_state.my_current_local_position.y = (float)cb.local_enu_msg.pose.position.y;
 			my_state.my_current_local_position.z = (float)cb.local_enu_msg.pose.position.z;
-			
+
 			// next grid position
 			my_state.my_next_position.x = enu(0,0);
 			my_state.my_next_position.y = enu(1,0);
@@ -782,14 +786,25 @@ int main(int argc, char **argv)
 			my_state.my_next_local_position.z = altitude_setpoint;
 		}
 
+		my_state.sensed_neighbors_full_msg.resize(Nd);
+		my_state.estimated_neighbors_next_locations.resize(Nd);
 		if (problem.get_N_sensed_neighbors() > 0){
 			my_state.sensed_neighbors.resize(problem.get_N_sensed_neighbors());
 			for (int i=0; i< problem.get_N_sensed_neighbors(); i++){
 				my_state.sensed_neighbors[i] = sensedN(i,0);
 			}
+			sensed_neighbors_full_msg = problem.get_sensed_neighbors_full_msg();
+			sensed_neighbors_predicted_locations = problem.get_sensed_neighbors_predicted_locations();
+			for (int a=0; a<Nd; a++){
+				my_state.sensed_neighbors_full_msg[a] = sensed_neighbors_full_msg(a,0);
+				my_state.estimated_neighbors_next_locations[a] = sensed_neighbors_predicted_locations(a,0);
+			}
 		}
-		else
+		else{
 			my_state.sensed_neighbors.clear();
+			my_state.sensed_neighbors_full_msg.clear();
+			my_state.estimated_neighbors_next_locations.clear();
+		}
 
 		// set current sensed (and predicted) attackers locations
 		e_predicted_loc = problem.get_predicted_attackers_sectors();
@@ -823,7 +838,7 @@ int main(int argc, char **argv)
 			cout << "###################################################### \n" ;
 		}
 
-		
+
 		ros::spinOnce();
 
 		loop_rate.sleep();
