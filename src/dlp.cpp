@@ -74,6 +74,9 @@ DLP::DLP()
 	my_current_location = d_current_locations(myID,0);
 	my_next_location = my_current_location;
 
+	/* Use collision contraints */
+	bApply_collision_constraints = true;
+
 	// create GLPK problem
 	lp = glp_create_prob();
 	// set default glpk params
@@ -1460,6 +1463,12 @@ DLP::update_static_obstacles_constraints(){
 */
 void
 DLP::update_collision_constraint(){
+
+	if (not bApply_collision_constraints){
+		x_obs = MatrixXf::Constant(ns,1,0.0);
+		x_obs_s = x_obs.sparseView();
+		return;
+	}
 	if (DEBUG)
 		printf("[%s]: Updating collision constraints...\n", __FUNCTION__);
 
@@ -2485,4 +2494,15 @@ DLP::set_attacker_discount_factor(float n){
 		return;
 	}
 	attacker_discount_factor = n;
+}
+
+/**
+* Sets bApply_collision_constraints
+* @param bool flag, sets bApply_collision_constraints
+*/
+void
+DLP::enable_collision_constraints(bool f)
+{
+	bApply_collision_constraints = f;
+	return;
 }

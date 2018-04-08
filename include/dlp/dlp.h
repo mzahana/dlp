@@ -411,6 +411,12 @@ public:
 	*/
 	void set_attacker_discount_factor(float n);
 
+	/**
+	* sets flag bApply_collision_constraints
+	* @param bool flag, sets bApply_collision_constraints
+	*/
+	void enable_collision_constraints(bool f);
+
 
 private:
 	/**
@@ -751,6 +757,11 @@ private:
 	* Matrix to store ENU coordinates.
 	*/
 	MatrixXf enu_coord;
+
+	/**
+	* whether to apply inter-collision constraints or not
+	*/
+	bool bApply_collision_constraints;
 
 	/**
 	* Memeber functions.

@@ -353,6 +353,9 @@ int main(int argc, char **argv)
 	bool b2DSim;
 	nh.param("sim_2D", b2DSim, false);
 
+	bool bCollision_constraints;
+	nh.param("bCollision_constraints", bCollision_constraints, true);
+
 	float p_lat0;
 	nh.param<float>("lat0", p_lat0, 47.397742);
 
@@ -459,6 +462,8 @@ int main(int argc, char **argv)
 	problem.set_NrandomSectors(NrandomSectors);
 	problem.set_attacker_discount_factor(attacker_discount_factor);
 	bool bInitRndEnemyLoc = true;
+
+	problem.enable_collision_constraints(bApply_collision_constraints);
 
 	/* update time stamp */
 	problem.set_dt(1.0/update_freq);

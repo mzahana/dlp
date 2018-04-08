@@ -74,6 +74,9 @@ d_velocity: [4.0, 4.0, 4.0]
 # use local estimates of all defenders states
 use_local_estimates: True
 
+# Whether or not to activate inter-collision constraints
+bCollision_constraints: True
+
 # maximum ROS loop frequency
 update_freq: 50
 
