@@ -1546,23 +1546,23 @@ DLP::sense_neighbors(){
 	// get my neighbors
 	int L =2*Nr; /* radius of sensing; 2 hops */
 	int N =DLP::get_NeighborSectors(my_current_location,L);
-	float *N_set; /* C array of set of neighbors, myself included*/
+	float N_set[N]; /* C array of set of neighbors, myself included*/
 	sensed_neighbors_full_msg = MatrixXf::Constant(Nd,1,0.0);
-	/*
+
 	for (int i=0; i< N ; i++){
 		N_set[i] = neighbor_sectors(i,0);
 	}
-	*/
-	N_set = neighbor_sectors.data();
+
+	//N_set = neighbor_sectors.data();
 
 	// get other agents sectors
 	float others_set[Nd];
 	int k=0;
-	
+
 	for (int i=0; i< Nd; i++){
 		others_set[i]=d_current_locations(i,0);
 	}
-	
+
 
 	//cout << "[DEBUG] D_current_locs before: " << d_current_locations.transpose() << endl;
 	//others_set = d_current_locations.data();
@@ -1703,6 +1703,7 @@ DLP::sense_and_estimate_defenders_locations(){
 
 			/* update current sector estimate */
 			d_current_local_sector_estimate(i,0) = d_current_locations(i,0);
+			sensed_neighbors_full_msg(i,0) = d_current_local_sector_estimate(i,0);
 			if (DEBUG)
 				printf("[%s]: Done setting true locations for sensed defedners.\n", __FUNCTION__);
 		}
@@ -1728,10 +1729,13 @@ DLP::sense_and_estimate_defenders_locations(){
 			enu_coord(1,0) = d_current_local_position_estimate(1,i); /* y */
 			int s = DLP::get_sector_from_ENU(enu_coord);
 			d_current_local_sector_estimate(i,0) = (float) s;
+			sensed_neighbors_full_msg(i,0) = d_current_local_sector_estimate(i,0);
 			if (DEBUG)
 				printf("[%s]: Done calculating estimated sectors.\n", __FUNCTION__);
 		}
 	}
+
+	sensed_neighbors_full_msg(myID,0) = 0;
 
 	if (DEBUG)
 		printf("[%s]: DONE Building estimates on defenders locations...\n", __FUNCTION__);
@@ -2123,6 +2127,7 @@ DLP::extract_local_solution_estimate(){
 	u0_opt = MatrixXf::Constant(nu,1,0.0);
 	// init d_next_locations
 	d_next_locations = MatrixXf::Constant(Nd,1,0.0);
+	sensed_neighbors_predicted_locations = MatrixXf::Constant(Nd,1,0.0);
 	//fill u0_opt
 	for (int i=0; i<nu; i++){
 		u0_opt(i,0)=glp_get_col_prim(lp, (i+1)+ns*Tp);
@@ -2161,6 +2166,7 @@ DLP::extract_local_solution_estimate(){
 		* Hence, it's equal to current location.
 		*/
 		d_next_locations(a,0) = d_current_local_sector_estimate(a,0);
+		sensed_neighbors_predicted_locations(a,0) = d_next_locations(a,0);
 		for (int j=0; j<N; j++){
 			sj = neighbor_sectors(j,0);
 			//cout << u0_opt(si*ns-ns+(sj-1),0) << " , ";
@@ -2168,6 +2174,7 @@ DLP::extract_local_solution_estimate(){
 				min_value = u0_opt(si*ns-ns+(sj-1),0);
 				// will only update if at least one input > 0
 				d_next_locations(a,0) = sj;
+				sensed_neighbors_predicted_locations(a,0) =sj;
 			}
 			d_local_sector_prediction(a,0) = d_next_locations(a,0);
 			/* get sector's xyz */
@@ -2185,6 +2192,7 @@ DLP::extract_local_solution_estimate(){
 
 	/* get this agent's next sector */
 	my_next_location = d_next_locations(myID,0);
+	sensed_neighbors_predicted_locations(myID,0) = 0;
 	cout <<endl;
 	return;
 }
