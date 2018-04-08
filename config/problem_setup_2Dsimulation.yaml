@@ -12,8 +12,8 @@ sector_size: [5.0, 5.0]
 # origin shifts (dx,dy) from (0,0) in ENU, in meter(s)
 origin_shifts: [0.0, 0.0]
 
-N_defenders: 3
-N_attackers: 1
+N_defenders: 8
+N_attackers: 3
 
 # count of base sectors
 nBase: 1
@@ -75,7 +75,7 @@ d_velocity: [4.0, 4.0, 4.0]
 use_local_estimates: False
 
 # Whether or not to activate inter-collision constraints
-bCollision_constraints: False
+bCollision_constraints: True
 
 # maximum ROS loop frequency
 update_freq: 50

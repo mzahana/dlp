@@ -146,6 +146,76 @@ class MasterC():
 		# get sector
 		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
 
+	def d4poseCb(self, msg):
+		i=3
+		if i > self.Nd:
+			return
+		x_enu = msg.pose.position.x
+		y_enu = msg.pose.position.y
+		z_enu = msg.pose.position.z
+		#print "x/y: ", x_enu, y_enu
+		p=Point32(x_enu, y_enu,z_enu)
+		self.d_msg.defenders_position[i] = p
+
+		# get sector
+		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
+
+	def d5poseCb(self, msg):
+		i=4
+		if i > self.Nd:
+			return
+		x_enu = msg.pose.position.x
+		y_enu = msg.pose.position.y
+		z_enu = msg.pose.position.z
+		#print "x/y: ", x_enu, y_enu
+		p=Point32(x_enu, y_enu,z_enu)
+		self.d_msg.defenders_position[i] = p
+
+		# get sector
+		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
+
+	def d6poseCb(self, msg):
+		i=5
+		if i > self.Nd:
+			return
+		x_enu = msg.pose.position.x
+		y_enu = msg.pose.position.y
+		z_enu = msg.pose.position.z
+		#print "x/y: ", x_enu, y_enu
+		p=Point32(x_enu, y_enu,z_enu)
+		self.d_msg.defenders_position[i] = p
+
+		# get sector
+		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
+
+	def d7poseCb(self, msg):
+		i=6
+		if i > self.Nd:
+			return
+		x_enu = msg.pose.position.x
+		y_enu = msg.pose.position.y
+		z_enu = msg.pose.position.z
+		#print "x/y: ", x_enu, y_enu
+		p=Point32(x_enu, y_enu,z_enu)
+		self.d_msg.defenders_position[i] = p
+
+		# get sector
+		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
+
+	def d8poseCb(self, msg):
+		i=7
+		if i > self.Nd:
+			return
+		x_enu = msg.pose.position.x
+		y_enu = msg.pose.position.y
+		z_enu = msg.pose.position.z
+		#print "x/y: ", x_enu, y_enu
+		p=Point32(x_enu, y_enu,z_enu)
+		self.d_msg.defenders_position[i] = p
+
+		# get sector
+		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
+
 	def e1poseCb(self, msg):
 		i=0
 		x_enu = msg.pose.position.x
@@ -186,6 +256,19 @@ class MasterC():
 		# get sector
 		self.e_msg.enemy_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
 
+	def e4poseCb(self, msg):
+		i=3
+		if i > self.Ne:
+			return
+		x_enu = msg.pose.position.x
+		y_enu = msg.pose.position.y
+		z_enu = msg.pose.position.z
+		#print "x/y: ", x_enu, y_enu
+		p=Point32(x_enu, y_enu,z_enu)	# return x/y local ENU location of sector s
+		self.e_msg.enemy_position[i] = p
+
+		# get sector
+		self.e_msg.enemy_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
 
 	def enu2sector(self,x_enu,y_enu,z_enu):
 		nRows = self.grid_size[0]*1.0
@@ -316,10 +399,15 @@ def main():
 	rospy.Subscriber(mObj.d_pose_topic_names[0], PoseStamped, mObj.d1poseCb)
 	rospy.Subscriber(mObj.d_pose_topic_names[1], PoseStamped, mObj.d2poseCb)
 	rospy.Subscriber(mObj.d_pose_topic_names[2], PoseStamped, mObj.d3poseCb)
+	rospy.Subscriber(mObj.d_pose_topic_names[3], PoseStamped, mObj.d4poseCb)
+	rospy.Subscriber(mObj.d_pose_topic_names[4], PoseStamped, mObj.d5poseCb)
+	rospy.Subscriber(mObj.d_pose_topic_names[5], PoseStamped, mObj.d6poseCb)
+	rospy.Subscriber(mObj.d_pose_topic_names[6], PoseStamped, mObj.d7poseCb)
+	rospy.Subscriber(mObj.d_pose_topic_names[7], PoseStamped, mObj.d8poseCb)
 
 	rospy.Subscriber(mObj.e_pose_topic_names[0], PoseStamped, mObj.e1poseCb)
-	#rospy.Subscriber(mObj.e_pose_topic_names[1], PoseStamped, mObj.e2poseCb)
-	#rospy.Subscriber(mObj.e_pose_topic_names[2], PoseStamped, mObj.e3poseCb)
+	rospy.Subscriber(mObj.e_pose_topic_names[1], PoseStamped, mObj.e2poseCb)
+	rospy.Subscriber(mObj.e_pose_topic_names[2], PoseStamped, mObj.e3poseCb)
 
 	k=0
 	while k<100:
