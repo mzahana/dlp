@@ -463,7 +463,7 @@ int main(int argc, char **argv)
 	problem.set_attacker_discount_factor(attacker_discount_factor);
 	bool bInitRndEnemyLoc = true;
 
-	problem.enable_collision_constraints(bApply_collision_constraints);
+	problem.enable_collision_constraints(bCollision_constraints);
 
 	/* update time stamp */
 	problem.set_dt(1.0/update_freq);
