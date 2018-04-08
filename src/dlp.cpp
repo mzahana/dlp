@@ -1556,16 +1556,16 @@ DLP::sense_neighbors(){
 	N_set = neighbor_sectors.data();
 
 	// get other agents sectors
-	float *others_set;
+	float others_set[Nd];
 	int k=0;
-	/*
+	
 	for (int i=0; i< Nd; i++){
 		others_set[i]=d_current_locations(i,0);
 	}
-	*/
+	
 
-
-	others_set = d_current_locations.data();
+	//cout << "[DEBUG] D_current_locs before: " << d_current_locations.transpose() << endl;
+	//others_set = d_current_locations.data();
 
 	vector<int> intersection_set(Nd);// vector stores intersection set
 	std::vector<int>::iterator it;
@@ -1590,6 +1590,7 @@ DLP::sense_neighbors(){
 			}
 		}
 	}
+	//cout << "[DEBUG] d_current_locs after" << d_current_locations.transpose() << endl;
 	if (DEBUG){
 		cout << "[" << __FUNCTION__ << "] my current location: " <<  my_current_location << endl;
 		cout <<"[" << __FUNCTION__ << "] Current neighbor sectors: " << neighbor_sectors.transpose() << "\n";
