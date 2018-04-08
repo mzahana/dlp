@@ -1340,6 +1340,7 @@ DLP::setup_glpk_local_problem(){
 	* in this implementation, it contains dynamics and flow constraints only.
 	*/
 	// number of nonzero values
+	//cout << "[DEBUG]" << x_obs_s.nonZeros() << endl;
 	int nnzEq = Ad_s.nonZeros() + x_obs_s.nonZeros() + X_static_obs_s.nonZeros();
 	int nnzIneq = Af_s.nonZeros();
 
