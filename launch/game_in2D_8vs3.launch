@@ -65,7 +65,7 @@
 		<arg name="id" default="4"/>
 		<rosparam command="load" file="$(find dlp)/config/problem_setup_2Dsimulation.yaml" />
 		<param name="myID" type="int" value="$(arg id)" />
-		<param name="home_sector" type="int" value="23" />
+		<param name="home_sector" type="int" value="31" />
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
 		</node>
@@ -79,7 +79,7 @@
 		<arg name="id" default="5"/>
 		<rosparam command="load" file="$(find dlp)/config/problem_setup_2Dsimulation.yaml" />
 		<param name="myID" type="int" value="$(arg id)" />
-		<param name="home_sector" type="int" value="28" />
+		<param name="home_sector" type="int" value="40" />
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
 		</node>
@@ -93,7 +93,7 @@
 		<arg name="id" default="6"/>
 		<rosparam command="load" file="$(find dlp)/config/problem_setup_2Dsimulation.yaml" />
 		<param name="myID" type="int" value="$(arg id)" />
-		<param name="home_sector" type="int" value="30" />
+		<param name="home_sector" type="int" value="54" />
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
 		</node>
@@ -107,7 +107,7 @@
 		<arg name="id" default="7"/>
 		<rosparam command="load" file="$(find dlp)/config/problem_setup_2Dsimulation.yaml" />
 		<param name="myID" type="int" value="$(arg id)" />
-		<param name="home_sector" type="int" value="66" />
+		<param name="home_sector" type="int" value="56" />
 
 		<node pkg="dlp" type="dlp_node" name="dlp_node_$(arg id)"  required="true" output="screen">
 		</node>
@@ -124,9 +124,10 @@
 		<param name="myID" type="int" value="$(arg id)" />
 		<param name="home_sector" type="int" value="91" />
 		<param name="isATTACKER" value="True" />
-		<param name="alpha" value="0.8" />
-		<param name="beta" value="-0.2" />
+		<param name="alpha" value="0.9" />
+		<param name="beta" value="-0.1" />
 		<param name="cmd_step" value="0.1" />
+		<param name="Tp" value="3" />
 
 		<node pkg="dlp" type="dlp_node_attacking" name="dlp_attacker_node_$(arg id)"  required="true" output="screen">
     </node>
@@ -142,9 +143,10 @@
 		<param name="myID" type="int" value="$(arg id)" />
 		<param name="home_sector" type="int" value="99" />
 		<param name="isATTACKER" value="True" />
-		<param name="alpha" value="0.8" />
-		<param name="beta" value="-0.2" />
+		<param name="alpha" value="0.9" />
+		<param name="beta" value="-0.1" />
 		<param name="cmd_step" value="0.1" />
+		<param name="Tp" value="3" />
 
 		<node pkg="dlp" type="dlp_node_attacking" name="dlp_attacker_node_$(arg id)"  required="true" output="screen">
     </node>
@@ -160,9 +162,10 @@
 		<param name="myID" type="int" value="$(arg id)" />
 		<param name="home_sector" type="int" value="85" />
 		<param name="isATTACKER" value="True" />
-		<param name="alpha" value="0.8" />
-		<param name="beta" value="-0.2" />
+		<param name="alpha" value="0.9" />
+		<param name="beta" value="-0.1" />
 		<param name="cmd_step" value="0.1" />
+		<param name="Tp" value="3" />
 
 		<node pkg="dlp" type="dlp_node_attacking" name="dlp_attacker_node_$(arg id)"  required="true" output="screen">
 		</node>

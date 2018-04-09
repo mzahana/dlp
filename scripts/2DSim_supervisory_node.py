@@ -5,7 +5,7 @@ from numpy import array
 from std_msgs.msg import *
 from geometry_msgs.msg import Point, Point32, PoseStamped, Quaternion, Pose
 from sensor_msgs.msg import NavSatFix
-from dlp.msg import DefendersState, EnemyState, MasterCommand
+from dlp.msg import DefendersState, EnemyState, MasterCommand, DlpState
 from math import sqrt, ceil
 import helpers as hp
 
@@ -62,8 +62,10 @@ class MasterC():
 		estr = '/attacker'
 
 		self.d_pose_topic_names = []
+		self.d_dlp_state_topics = []
 		for i in range(self.Nd):
 			self.d_pose_topic_names.append(dstr+str(i+1)+'/local_pose')
+			self.d_dlp_state_topics.append(dstr+str(i+1)+'/dlp_state')
 
 		self.e_pose_topic_names = []
 		for i in range(self.Ne):
@@ -84,6 +86,9 @@ class MasterC():
 		for i in range(self.Nd):
 			self.d_msg.defenders_position.append(p)
 			self.d_msg.defenders_sectors.append(i)
+			self.d_msg.defenders_next_sectors.append(i)
+			self.d_msg.successful_prediction_rate.append(0.0)
+			self.d_msg.connectivity_rate.append(0.0)
 
 		self.e_msg.header.stamp = rospy.Time.now()
 		self.e_msg.enemy_count = self.Ne
@@ -98,6 +103,15 @@ class MasterC():
 
 		self.master_msg.allCaptured = False
 		self.master_msg.gameEnd = False
+
+		# Defenders predictions about their neighbors
+		# List of lists
+		self.d_predictions=[]
+
+		# initialization
+		x=[0]*self.Nd
+		for i in range(self.Nd):
+			self.d_predictions.append(x)
 
 		# loop rate
 		self.rate = rospy.Rate(50)
@@ -116,6 +130,14 @@ class MasterC():
 		# get sector
 		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
 
+	def d1dlpCb(self, msg):
+		i=0
+		# next sector
+		self.d_msg.defenders_next_sectors[i] = msg.my_next_sector
+
+		# defender predicition about its neighbors
+		self.d_predictions[i] = msg.estimated_neighbors_next_locations
+
 
 	def d2poseCb(self, msg):
 		i=1
@@ -130,6 +152,14 @@ class MasterC():
 
 		# get sector
 		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
+
+	def d2dlpCb(self, msg):
+		i=1
+		# next sector
+		self.d_msg.defenders_next_sectors[i] = msg.my_next_sector
+
+		# defender predicition about its neighbors
+		self.d_predictions[i] = msg.estimated_neighbors_next_locations
 
 
 	def d3poseCb(self, msg):
@@ -146,6 +176,14 @@ class MasterC():
 		# get sector
 		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
 
+	def d3dlpCb(self, msg):
+		i=2
+		# next sector
+		self.d_msg.defenders_next_sectors[i] = msg.my_next_sector
+
+		# defender predicition about its neighbors
+		self.d_predictions[i] = msg.estimated_neighbors_next_locations
+
 	def d4poseCb(self, msg):
 		i=3
 		if i > self.Nd:
@@ -159,6 +197,14 @@ class MasterC():
 
 		# get sector
 		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
+
+	def d4dlpCb(self, msg):
+		i=3
+		# next sector
+		self.d_msg.defenders_next_sectors[i] = msg.my_next_sector
+
+		# defender predicition about its neighbors
+		self.d_predictions[i] = msg.estimated_neighbors_next_locations
 
 	def d5poseCb(self, msg):
 		i=4
@@ -174,6 +220,14 @@ class MasterC():
 		# get sector
 		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
 
+	def d5dlpCb(self, msg):
+		i=4
+		# next sector
+		self.d_msg.defenders_next_sectors[i] = msg.my_next_sector
+
+		# defender predicition about its neighbors
+		self.d_predictions[i] = msg.estimated_neighbors_next_locations
+
 	def d6poseCb(self, msg):
 		i=5
 		if i > self.Nd:
@@ -187,6 +241,14 @@ class MasterC():
 
 		# get sector
 		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
+
+	def d6dlpCb(self, msg):
+		i=5
+		# next sector
+		self.d_msg.defenders_next_sectors[i] = msg.my_next_sector
+
+		# defender predicition about its neighbors
+		self.d_predictions[i] = msg.estimated_neighbors_next_locations
 
 	def d7poseCb(self, msg):
 		i=6
@@ -202,6 +264,14 @@ class MasterC():
 		# get sector
 		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
 
+	def d7dlpCb(self, msg):
+		i=6
+		# next sector
+		self.d_msg.defenders_next_sectors[i] = msg.my_next_sector
+
+		# defender predicition about its neighbors
+		self.d_predictions[i] = msg.estimated_neighbors_next_locations
+
 	def d8poseCb(self, msg):
 		i=7
 		if i > self.Nd:
@@ -215,6 +285,14 @@ class MasterC():
 
 		# get sector
 		self.d_msg.defenders_sectors[i] = self.enu2sector(x_enu, y_enu, 0.0)
+
+	def d8dlpCb(self, msg):
+		i=7
+		# next sector
+		self.d_msg.defenders_next_sectors[i] = msg.my_next_sector
+
+		# defender predicition about its neighbors
+		self.d_predictions[i] = msg.estimated_neighbors_next_locations
 
 	def e1poseCb(self, msg):
 		i=0
@@ -378,6 +456,26 @@ class MasterC():
 					rospy.logwarn('An attacker WON! Defenders should land now. Attacker will keep in the air!')
 					return
 
+	def update_prediciton_rate(self):
+		for a in range(self.Nd):
+			# number of neighbors for defender a
+			di_pred = self.d_predictions[a]
+			N = sum(x>0 for x in di_pred)
+
+			# find matches
+			matches = [i for i, j in zip(self.d_msg.defenders_next_sectors, di_pred) if i == j]
+			# number of matches
+			nMatches = len(matches)
+
+			# compute prediction rate
+			if N > 0:
+				self.d_msg.successful_prediction_rate[a] = float(nMatches)/float(N)
+			else:
+				self.d_msg.successful_prediction_rate[a] = 0.0
+
+			self.d_msg.connectivity_rate[a] = float(N)/float(self.Nd)
+		return
+
 def main():
 
 	rospy.init_node('2DSim_supervisory_node', anonymous=True)
@@ -405,6 +503,17 @@ def main():
 	rospy.Subscriber(mObj.d_pose_topic_names[6], PoseStamped, mObj.d7poseCb)
 	rospy.Subscriber(mObj.d_pose_topic_names[7], PoseStamped, mObj.d8poseCb)
 
+	rospy.Subscriber(mObj.d_dlp_state_topics[0], DlpState, mObj.d1dlpCb)
+	rospy.Subscriber(mObj.d_dlp_state_topics[1], DlpState, mObj.d2dlpCb)
+	rospy.Subscriber(mObj.d_dlp_state_topics[2], DlpState, mObj.d3dlpCb)
+	rospy.Subscriber(mObj.d_dlp_state_topics[3], DlpState, mObj.d4dlpCb)
+	rospy.Subscriber(mObj.d_dlp_state_topics[4], DlpState, mObj.d5dlpCb)
+	rospy.Subscriber(mObj.d_dlp_state_topics[5], DlpState, mObj.d6dlpCb)
+	rospy.Subscriber(mObj.d_dlp_state_topics[6], DlpState, mObj.d7dlpCb)
+	rospy.Subscriber(mObj.d_dlp_state_topics[7], DlpState, mObj.d8dlpCb)
+
+
+
 	rospy.Subscriber(mObj.e_pose_topic_names[0], PoseStamped, mObj.e1poseCb)
 	rospy.Subscriber(mObj.e_pose_topic_names[1], PoseStamped, mObj.e2poseCb)
 	rospy.Subscriber(mObj.e_pose_topic_names[2], PoseStamped, mObj.e3poseCb)
@@ -423,6 +532,9 @@ def main():
 		mObj.d_msg.header.stamp = rospy.Time.now()
 		mObj.e_msg.header.stamp = rospy.Time.now()
 		mObj.master_msg.header.stamp = rospy.Time.now()
+
+		mObj.update_prediciton_rate()
+
 		d_pub.publish(mObj.d_msg)
 		e_pub.publish(mObj.e_msg)
 		master_pub.publish(mObj.master_msg)
