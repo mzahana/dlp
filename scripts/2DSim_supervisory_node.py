@@ -471,7 +471,7 @@ class MasterC():
 			if N > 0:
 				self.d_msg.successful_prediction_rate[a] = float(nMatches)/float(N)
 			else:
-				self.d_msg.successful_prediction_rate[a] = 0.0
+				self.d_msg.successful_prediction_rate[a] = -1.0
 
 			self.d_msg.connectivity_rate[a] = float(N)/float(self.Nd)
 		return
