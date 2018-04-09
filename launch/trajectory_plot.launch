@@ -2,7 +2,7 @@
 
 
 	<!-- Launch trajectory plotter node-->
-	<rosparam command="load" file="$(find dlp)/config/problem_setup_outdoor.yaml" />
+	<rosparam command="load" file="$(find dlp)/config/problem_setup_2Dsimulation.yaml" />
 	<node pkg="dlp" type="trajectory_plotter.py" name="trajectory_plotter"  required="true" output="screen">
 	</node>
 

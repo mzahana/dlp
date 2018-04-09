@@ -332,6 +332,18 @@ public:
 	MatrixXf& get_sensed_neighbors();
 
 	/**
+	* Returns poitner to vetcor of sensed_neighbors_full_msg
+	* @return poitner to vetcor of sensed_neighbors_full_msg
+	*/
+	MatrixXf& get_sensed_neighbors_full_msg();
+
+	/**
+	* Get sensed_neighbors_predicted_locations
+	* @return Pointer to sensed_neighbors_predicted_locations
+	*/
+	MatrixXf& get_sensed_neighbors_predicted_locations();
+
+	/**
 	* Returns numbers of sensed attackers
 	* @return <int> number of sensed attackers.
 	*/
@@ -393,11 +405,17 @@ public:
 	* sets bRandomizeEnemyLoc
 	*/
 	void set_bRandomizeEnemyLoc(bool f);
-	
+
 	/**
 	* sets attacker_discount_factor
 	*/
 	void set_attacker_discount_factor(float n);
+
+	/**
+	* sets flag bApply_collision_constraints
+	* @param bool flag, sets bApply_collision_constraints
+	*/
+	void enable_collision_constraints(bool f);
 
 
 private:
@@ -456,6 +474,14 @@ private:
 	int N_sensed_neighbors; /**< number of sensed neighbors */
 	MatrixXf sensed_neighbors; /**< sectors location of sensed neighbors */
 
+	MatrixXf sensed_neighbors_full_msg; /**< sensed neighbors; with zeros for non neighbors */
+
+	/**
+	* predicted (1-step) move of sensed neighbors expressed in full msg
+	* zeros at locations of non-neighbors
+	*/
+	MatrixXf sensed_neighbors_predicted_locations;
+
 	int N_local_attackers; /**< number of local sensed attackers*/
 	MatrixXf local_attackers; /**< sector locations of locally sensed attackers */
 
@@ -487,12 +513,12 @@ private:
 	*/
 	MatrixXf d_current_local_locations;
 
-	/** 
+	/**
 	* Current true locations of all defenders.
 	* Size = (3,Nd)
 	*/
 	MatrixXf d_current_position;
-	
+
 
 	/**
 	* Current local estimate of all defenders locations
@@ -538,11 +564,11 @@ private:
 	* current attackers locations. Distributed problem.
 	*/
 	MatrixXf e_current_local_locations;
-	/** 
+	/**
 	* Predicted attackers locations. Centralized Problem
 	*/
 	MatrixXf e_next_locations;
-	/** 
+	/**
 	* Predicted attackers locations. Distributed Problem
 	*/
 	MatrixXf e_next_local_locations;
@@ -731,6 +757,11 @@ private:
 	* Matrix to store ENU coordinates.
 	*/
 	MatrixXf enu_coord;
+
+	/**
+	* whether to apply inter-collision constraints or not
+	*/
+	bool bApply_collision_constraints;
 
 	/**
 	* Memeber functions.
