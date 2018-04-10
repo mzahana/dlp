@@ -328,10 +328,10 @@ DLP::set_local_attacker_sensing(bool flag){
 * gets defenders next location.
 * @param Dn pointer to array to return to.
 */
-void
-DLP::get_d_next_locations(MatrixXf& Dn){
-	Dn = d_next_locations;
-	return;
+MatrixXf&
+DLP::get_d_next_locations(){
+	
+	return d_next_locations;
 }
 
 /**

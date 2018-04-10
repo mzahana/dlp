@@ -723,7 +723,7 @@ int main(int argc, char **argv)
 			cout << "[dlp_node_attacking] Problem solved in Total time= " << (end-start)/( (clock_t)1000 ) << " miliseconds. " << endl;
 			cout << "[dlp_node_attacking] defenders current locations: " << eloc.transpose()<< endl;
 			cout << "[dlp_node_attacking] Attackers locations: " << dloc.transpose() << endl;
-			problem.get_d_next_locations(next_loc);
+			next_loc = problem.get_d_next_locations();
 			cout << "[dlp_node_attacking] Attacker planned transitions: "<< dloc.transpose()
 				<< " ---> "
 				<< next_loc.transpose()

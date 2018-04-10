@@ -220,7 +220,7 @@ public:
 	* returns defenders next location to matrix pointed by Dn.
 	* @param Dn pointer to array to return to.
 	*/
-	void get_d_next_locations(MatrixXf& Dn);
+	MatrixXf& get_d_next_locations();
 
 	/**
 	* Gets this agent's next location, after optimization is done

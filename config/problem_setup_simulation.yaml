@@ -75,13 +75,13 @@ bEnemyBookKeeping: False
 NrandomSectors: 50
 
 # Discount factor for enemy locatio prediction
-attacker_discount_factor: 0.6
+attacker_discount_factor: 0.5
 
 # defenders velocity [m/s]
 d_velocity: [4.0, 4.0, 4.0]
 
 # use local estimates of all defenders states
-use_local_estimates: True
+use_local_estimates: False
 
 # maximum ROS loop frequency
 update_freq: 50

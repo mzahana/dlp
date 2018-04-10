@@ -503,7 +503,7 @@ int main(int argc, char **argv)
 	MatrixXf sensed_neighbors_predicted_locations = MatrixXf::Constant(Nd,1,0.0);
 
 
-	MatrixXf next_loc; /* next optimal locations */
+	MatrixXf d_next_locations; /* next optimal locations */
 
 	MatrixXf enu(3,1);
 	int sector_from_enu;
@@ -583,7 +583,7 @@ int main(int argc, char **argv)
 		start = clock();
 
 		/* initialize enemy random locations only once */
-		if (bInitRndEnemyLoc){
+		if (bInitRndEnemyLoc and bEnemyBookKeeping){
 				problem.set_bRandomizeEnemyLoc(true);
 				bInitRndEnemyLoc = false;
 		}
@@ -709,19 +709,21 @@ int main(int argc, char **argv)
 		problem.solve_simplex();// faster than interior point
 
 		//problem.solve_intp();
-		if (bGlobalComms)
+		if (bGlobalComms){
 			problem.extract_centralized_solution();
+			d_next_locations = problem.get_d_next_locations();
+		}
 		else{
 			if (bUseLocalEstimate)
 				problem.extract_local_solution_estimate();
 			else
 				problem.extract_local_solution();
+
+			neighbors_next_loc = problem.get_neighbor_next_locations();
+
+			sensedN = problem.get_sensed_neighbors();
 		}
 
-		//problem.get_d_next_locations(next_loc);
-		neighbors_next_loc = problem.get_neighbor_next_locations();
-
-		sensedN = problem.get_sensed_neighbors();
 
 
 		end = clock();
@@ -738,7 +740,7 @@ int main(int argc, char **argv)
 		my_state.my_current_local_position.y = (float)cb.local_enu_msg.pose.position.y;
 		my_state.my_current_local_position.z = (float)cb.local_enu_msg.pose.position.z;
 
-		// enu location of next target sector, considering shifts in the origin!!!
+		// enu location of next target sector, considering no shifts in the origin!!!
 		enu = problem.get_ENU_from_sector_noShift(problem.get_my_next_location());
 
 		if (use_gps){// where each vehicle's local fixed frame can be different
@@ -791,24 +793,36 @@ int main(int argc, char **argv)
 			my_state.my_next_local_position.z = altitude_setpoint;
 		}
 
-		my_state.sensed_neighbors_full_msg.resize(Nd);
-		my_state.estimated_neighbors_next_locations.resize(Nd);
-		if (problem.get_N_sensed_neighbors() > 0){
-			my_state.sensed_neighbors.resize(problem.get_N_sensed_neighbors());
-			for (int i=0; i< problem.get_N_sensed_neighbors(); i++){
-				my_state.sensed_neighbors[i] = sensedN(i,0);
+		if (not bGlobalComms){
+			my_state.sensed_neighbors_full_msg.resize(Nd);
+			my_state.estimated_neighbors_next_locations.resize(Nd);
+			if (problem.get_N_sensed_neighbors() > 0){
+				my_state.sensed_neighbors.resize(problem.get_N_sensed_neighbors());
+				for (int i=0; i< problem.get_N_sensed_neighbors(); i++){
+					my_state.sensed_neighbors[i] = sensedN(i,0);
+				}
+				sensed_neighbors_full_msg = problem.get_sensed_neighbors_full_msg();
+				sensed_neighbors_predicted_locations = problem.get_sensed_neighbors_predicted_locations();
+				for (int a=0; a<Nd; a++){
+					my_state.sensed_neighbors_full_msg[a] = sensed_neighbors_full_msg(a,0);
+					my_state.estimated_neighbors_next_locations[a] = sensed_neighbors_predicted_locations(a,0);
+				}
 			}
-			sensed_neighbors_full_msg = problem.get_sensed_neighbors_full_msg();
-			sensed_neighbors_predicted_locations = problem.get_sensed_neighbors_predicted_locations();
-			for (int a=0; a<Nd; a++){
-				my_state.sensed_neighbors_full_msg[a] = sensed_neighbors_full_msg(a,0);
-				my_state.estimated_neighbors_next_locations[a] = sensed_neighbors_predicted_locations(a,0);
+			else{
+				my_state.sensed_neighbors.clear();
+				my_state.sensed_neighbors_full_msg.clear();
+				my_state.estimated_neighbors_next_locations.clear();
 			}
 		}
 		else{
-			my_state.sensed_neighbors.clear();
-			my_state.sensed_neighbors_full_msg.clear();
-			my_state.estimated_neighbors_next_locations.clear();
+			my_state.sensed_neighbors_full_msg.resize(Nd);
+			my_state.estimated_neighbors_next_locations.resize(Nd);
+			my_state.sensed_neighbors.resize(Nd);
+			for (int i=0; i < Nd; i++){
+				my_state.sensed_neighbors_full_msg[i] = d_next_locations(i,0);
+				my_state.estimated_neighbors_next_locations[i] = d_next_locations(i,0);
+				my_state.sensed_neighbors[i] = d_next_locations(i,0);
+			}
 		}
 
 		// set current sensed (and predicted) attackers locations
@@ -842,6 +856,7 @@ int main(int argc, char **argv)
 				cout << "[dlp_node] Sensed Neighbors: []" <<"\n";
 			cout << "###################################################### \n" ;
 		}
+
 
 
 		ros::spinOnce();
