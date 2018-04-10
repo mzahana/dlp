@@ -1,10 +1,10 @@
 <launch>
 	<arg name="id" default="0"/>
-	<arg name="joy" default="False"/>
+	<arg name="joy" default="True"/>
 	<arg name="ns" default="$(eval 'attacker_' + str(1 + arg('id')) )"/>
 
 	<arg name="fcu_url" default="/dev/ttyUSB0:921600" />
-	<arg name="gcs_url" default="" />
+	<arg name="gcs_url" default="udp://@192.168.0.171:14550" />
 	<arg name="tgt_system" default="1" />
 	<arg name="tgt_component" default="1" />
 
