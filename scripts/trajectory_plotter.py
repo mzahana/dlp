@@ -66,9 +66,16 @@ class Plotter():
 		self.bBattle = False
 
 		### Figure ###
-		self.fig = plt.figure()
+
+		# trajectory figure
+		self.fig = plt.figure(1)
 		self.traj_ax = self.fig.add_subplot(111) # one axis for now
-		# grid size
+
+		# Predicions figure (bars)
+		self.bars_fig = plt.figure(2)
+		self.bars_ax = self.bars_fig.add_subplot(111)
+
+		## for trajectory figure: grid size
 		self.traj_ax.set_xlim(0,self.grid_size[1]) # x = columns
 		self.traj_ax.set_ylim(0,self.grid_size[0]) # y = rows
 		# grid divisions
@@ -123,9 +130,29 @@ class Plotter():
 			x,y,z = self.sector2normalized_enu(s_b)
 			self.traj_ax.scatter([x],[y], marker='o', s=200, facecolors='yellow', edgecolors = (0,0,0,1))
 
+		## for bars figure
+		self.bars_ax.set_title('Succsessful Prediction of Indvidual Agents')
+		self.bars_ax.set_ylabel('Percentage %')
+		self.bars_ax.set_ylim([-1, 1])
+		ind = np.arange(1, self.Nd+1)
+		self.bars_ax.set_xticks(ind)
+		ticks_labels=[]
+		for i in range(self.Nd):
+			dstr = "D"+str(i+1)
+			ticks_labels.append(dstr)
+
+		self.bars_ax.set_xticklabels(ticks_labels)
+
+		# bars object: contains all bars
+		x = [0.0]*self.Nd
+		self.bars = self.bars_ax.bar(ind, x, align = 'center')
+
 		# initial draw
 		self.fig.canvas.draw()
 		self.fig.canvas.flush_events()
+
+		self.bars_fig.canvas.draw()
+		self.bars_fig.canvas.flush_events()
 
 	#### Callbacks ###
 	def battleCb(self,msg):
@@ -165,22 +192,23 @@ class Plotter():
 				y = (self.d_msg.defenders_position[d].y+self.origin_shifts[1])/self.sector_size[1]
 				# write 'start'
 				if self.battle_flag_k <1 :
-					plt.text(x,y,'start')
+					self.traj_ax.text(x,y,'start')
 				self.d_tr[d].set_xdata(np.append(self.d_tr[d].get_xdata(), np.array([x]) ) )
 				self.d_tr[d].set_ydata(np.append(self.d_tr[d].get_ydata(), np.array([y]) ) )
+				self.bars[d].set_height(self.d_msg.successful_prediction_rate[d])
 
 			for e in range(self.Ne):
 				x = (self.e_msg.enemy_position[e].x+self.origin_shifts[0])/self.sector_size[0]
 				y = (self.e_msg.enemy_position[e].y+self.origin_shifts[1])/self.sector_size[1]
 				# write 'start'
 				if self.battle_flag_k <1 :
-					plt.text(x,y,'start')
+					self.traj_ax.text(x,y,'start')
 				self.e_tr[e].set_xdata(np.append(self.e_tr[e].get_xdata(), np.array([x]) ) )
 				self.e_tr[e].set_ydata(np.append(self.e_tr[e].get_ydata(), np.array([y]) ) )
 				# write captured
 				if self.e_msg.is_captured[e] and self.capture_k[e]<1:
 					t= time.time() - self.start_t
-					plt.text(x,y,'Captured [%0.2f sec]'%t)
+					self.traj_ax.text(x,y,'Captured [%0.2f sec]'%t)
 					self.capture_k[e] = 1
 
 			# update battle counter
@@ -193,6 +221,9 @@ class Plotter():
 
 		self.fig.canvas.draw()
 		self.fig.canvas.flush_events()
+
+		self.bars_fig.canvas.draw()
+		self.bars_fig.canvas.flush_events()
 
 	def sector2enu(self, s):
 		shift_x = self.origin_shifts[0]  # origin shifts
