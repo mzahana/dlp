@@ -819,9 +819,9 @@ int main(int argc, char **argv)
 			my_state.estimated_neighbors_next_locations.resize(Nd);
 			my_state.sensed_neighbors.resize(Nd);
 			for (int i=0; i < Nd; i++){
-				my_state.sensed_neighbors_full_msg[i] = d_next_locations(i,0);
+				my_state.sensed_neighbors_full_msg[i] = dloc(i,0);
 				my_state.estimated_neighbors_next_locations[i] = d_next_locations(i,0);
-				my_state.sensed_neighbors[i] = d_next_locations(i,0);
+				my_state.sensed_neighbors[i] = dloc(i,0);
 			}
 		}
 
