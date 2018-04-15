@@ -65,6 +65,9 @@ class Plotter():
 		# battle flag
 		self.bBattle = False
 
+		# Average correcto predictions of defenders
+		self.avg_predictions= [0.0]*self.Nd
+
 		### Figure ###
 
 		# trajectory figure
@@ -73,7 +76,10 @@ class Plotter():
 
 		# Predicions figure (bars)
 		self.bars_fig = plt.figure(2)
-		self.bars_ax = self.bars_fig.add_subplot(111)
+		self.bars_ax = self.bars_fig.add_subplot(121)
+
+		# accumalative predictions axis
+		self.accum_ax = self.bars_fig.add_subplot(122)
 
 		## for trajectory figure: grid size
 		self.traj_ax.set_xlim(0,self.grid_size[1]) # x = columns
@@ -101,11 +107,12 @@ class Plotter():
 		# same for attackers
 		self.e_tr = [None]*self.Ne
 
+
 		for d in range(self.Nd):
 			self.d_tr[d], = self.traj_ax.plot([0.],[0.])
 			self.d_tr[d].set_marker('.')
 			self.d_tr[d].set_linestyle('')
-			self.d_tr[d].set_markeredgecolor((0,0,1)) # black
+			self.d_tr[d].set_markeredgecolor((0,0,1)) # blue
 
 		for e in range(self.Ne):
 			self.e_tr[e], = self.traj_ax.plot([0.],[0.])
@@ -132,20 +139,31 @@ class Plotter():
 
 		## for bars figure
 		self.bars_ax.set_title('Succsessful Prediction of Indvidual Agents')
+		self.accum_ax.set_title('Average Succsessful Prediction of Indvidual Agents')
 		self.bars_ax.set_ylabel('Percentage %')
+		self.accum_ax.set_ylabel('Average Percentage %')
 		self.bars_ax.set_ylim([-1, 1])
+		self.accum_ax.set_ylim([-1, 1])
+		#self.accum_ax.set_xlim([0, self.Nd+1])
 		ind = np.arange(1, self.Nd+1)
 		self.bars_ax.set_xticks(ind)
+		self.accum_ax.set_xticks(ind)
 		ticks_labels=[]
 		for i in range(self.Nd):
 			dstr = "D"+str(i+1)
 			ticks_labels.append(dstr)
 
 		self.bars_ax.set_xticklabels(ticks_labels)
+		self.accum_ax.set_xticklabels(ticks_labels)
 
 		# bars object: contains all bars
 		x = [0.0]*self.Nd
 		self.bars = self.bars_ax.bar(ind, x, align = 'center')
+		self.bars_avg = self.accum_ax.bar(ind, x, align = 'center')
+
+		# counter for averaging successful predictions
+		self.pred_counter = 0.0
+
 
 		# initial draw
 		self.fig.canvas.draw()
@@ -186,23 +204,28 @@ class Plotter():
 		# update if we battle
 		if self.bBattle:
 
+			self.pred_counter = self.pred_counter + 1.0
+
 
 			for d in range(self.Nd):
 				x = (self.d_msg.defenders_position[d].x + self.origin_shifts[0])/self.sector_size[0]
 				y = (self.d_msg.defenders_position[d].y+self.origin_shifts[1])/self.sector_size[1]
 				# write 'start'
 				if self.battle_flag_k <1 :
-					self.traj_ax.text(x,y,'start')
+					self.traj_ax.text(x,y,'start D'+str(d))
 				self.d_tr[d].set_xdata(np.append(self.d_tr[d].get_xdata(), np.array([x]) ) )
 				self.d_tr[d].set_ydata(np.append(self.d_tr[d].get_ydata(), np.array([y]) ) )
 				self.bars[d].set_height(self.d_msg.successful_prediction_rate[d])
+
+				self.avg_predictions[d] = self.avg_predictions[d] + self.d_msg.successful_prediction_rate[d]
+				self.bars_avg[d].set_height(self.avg_predictions[d] / self.pred_counter)
 
 			for e in range(self.Ne):
 				x = (self.e_msg.enemy_position[e].x+self.origin_shifts[0])/self.sector_size[0]
 				y = (self.e_msg.enemy_position[e].y+self.origin_shifts[1])/self.sector_size[1]
 				# write 'start'
 				if self.battle_flag_k <1 :
-					self.traj_ax.text(x,y,'start')
+					self.traj_ax.text(x,y,'start A'+str(e))
 				self.e_tr[e].set_xdata(np.append(self.e_tr[e].get_xdata(), np.array([x]) ) )
 				self.e_tr[e].set_ydata(np.append(self.e_tr[e].get_ydata(), np.array([y]) ) )
 				# write captured
