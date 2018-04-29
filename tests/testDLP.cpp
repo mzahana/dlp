@@ -109,7 +109,7 @@ int main(){
 
 	//problem.solve_intp();
 	problem.extract_centralized_solution();
-	problem.get_d_next_locations(next_loc);
+	next_loc = problem.get_d_next_locations();
 
 	
 	problem.extract_local_solution();

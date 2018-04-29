@@ -191,7 +191,7 @@ int main(void){
 		problem.update_LP();
 		problem.solve_simplex();
 		problem.extract_centralized_solution();
-		problem.get_d_next_locations(d_next_loc);
+		d_next_loc = problem.get_d_next_locations();
 		/* write solutions to file */
 		for (int d=0; d<Nd; d++)
 			centrSolFile << d_next_loc(d,0) << ",";
