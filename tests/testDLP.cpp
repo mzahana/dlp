@@ -15,14 +15,14 @@
 
 int main(){
 	DLP problem;
-	problem.DEBUG = true;
+	problem.DEBUG = false;
 	//problem.set_defender_side(false);
 
 	int myID =2;// 0 is 1st agent
 	problem.set_myID(myID);
 	int Nd=3; int Ne = 3;
-	int rows=7; int cols=7;
-	int Tp=3;
+	int rows=20; int cols=20;
+	int Tp=5;
 
 	int nBaseref=3;
 	int nB=1;
@@ -101,6 +101,7 @@ int main(){
 
 	problem.update_LP();
 	problem.solve_simplex();
+	//problem.solve_intp();
 
 	/*
 	problem.update_LP_dist();
