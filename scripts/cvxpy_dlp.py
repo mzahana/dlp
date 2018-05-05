@@ -8,6 +8,7 @@ Tools used:
 '''
 import inspect
 import numpy as np
+from numpy.linalg import norm
 import cvxpy as CVX
 from cvxopt import matrix, spmatrix, sparse, solvers
 # csr_matrix good for fast matrix/vector multiplications
@@ -148,7 +149,7 @@ class DistLP(object):
 
 		return
 
-	def set_myID(self, id)
+	def set_myID(self, id):
 		""" Sets this agent's ID in the team.
 			Args:
 				id: integer, stars form 0
@@ -304,7 +305,7 @@ class DistLP(object):
 	
 		return
 
-	def set_neighbor_R(self, r);
+	def set_neighbor_R(self, r):
 		""" Sets number of sectors reached in one time ste, in each direction.
 		Args:
 			r: integer >1
@@ -686,6 +687,52 @@ class DistLP(object):
 
 		return [r,c]
 
+	def get_min_distance2sectors(self, s, set):
+		"""Returns the minimum distance from sector s to all sectors in set
+		Args:
+			s: sector
+			set: list of sectors
+		Returns:
+			d: minimum distance
+		"""
+
+		# set min distance to high number
+		min_d = float("inf")
+		# find min distance
+
+		# get sector locatoin
+		s_loc =  np.array(self.get_sector_location(s))
+		for i in set:
+			t_loc = np.array(self.get_sector_location(i))
+			d = norm(s_loc-t_loc)
+			if d < min_d:
+				min_d = d
+		return min_d
+
+	def get_min_dist_sectors2sectors(self, s1,s2):
+		"""computes the minimum distance between two sets of sectors s1 & s2
+		It returns the min distance and the sector in s1 that is closest  to s2
+
+		Args:
+			s1/s2: list of sectors
+		Returns:
+			s: closest sector in s1 to s2
+			min_d: minimum distance
+		"""
+		# min distances form s2, for each sector in s1
+		distances = [0.0]*len(s1)
+		for i in range(len(s1)):
+			distances[i] = self.get_min_distance2sectors(s1[i],s2)
+
+		d_array = np.array(distances)
+
+		# minimum distance and the corresponding sector
+		s_index = np.argmin(d_array)
+		s = s1[s_index]
+		min_d = d_array[s_index]
+
+		return s, min_d
+
 	def getNeighborSectors(self, s, L):
 		"""returns a set of neighbor secors of sector [s] \in {s_1, ..., s_n}
 		within length defined by [L]
@@ -742,7 +789,7 @@ class DistLP(object):
 			# start index of u_{s_i} in the current row of Bout
 			Bout_start_i = (s)*self.ns -self.ns -1
 			# get Neighbors
-			N=self.getNeighborSectors(s)
+			N,_=self.getNeighborSectors(s,self.Nr)
 			# active indices for the row in Bout corresponding to current sector
 			Bout_active_i=[Bout_start_i+j for j in N]
 			# active indices for the row in Bin corresponding to current sector
@@ -954,9 +1001,11 @@ class DistLP(object):
 	def solve(self):
 		#print self.b
 		start_t= time.time()
-		self.prob.solve(solver=CVX.GLPK)  # Returns the optimal value.
+		self.prob.solve(solver=CVX.GLPK_MI)  # Returns the optimal value.
+		#self.prob.solve()
 		print "status:", self.prob.status
-		print 'Length of X_opt = ', len(self.X_opt.value)
+		print "Optimal value = ", self.prob.value
+		#print 'Length of X_opt = ', len(self.X_opt.value)
 		
 		print "Solution found in: ", time.time()-start_t, "second(s)"
 		#print sol
